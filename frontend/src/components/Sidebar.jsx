@@ -5,7 +5,11 @@ const Sidebar = ({ currentView, setCurrentView, mobileOpen, setMobileOpen, handl
     { id: 'dashboard', label: 'Dashboard', icon: 'dashboard' },
     { id: 'categories', label: 'Categories', icon: 'category' },
     { id: 'inventory', label: 'Inventory', icon: 'inventory_2' },
-    { id: 'notifications', label: 'Notifications', icon: 'notifications' }
+    { id: 'notifications', label: 'Notifications', icon: 'notifications' },
+    { id: 'sales', label: 'Sales', icon: 'shopping_cart' },
+    { id: 'bundles', label: 'Bundles', icon: 'package_2' },
+    { id: 'analytics', label: 'Analytics', icon: 'leaderboard' },
+    { id: 'export', label: 'Export', icon: 'ios_share' }
   ];
 
   const handleNavClick = (viewId) => {

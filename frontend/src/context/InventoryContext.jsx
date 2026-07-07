@@ -3,6 +3,10 @@ import api from '../api/axios';
 
 export const InventoryContext = createContext();
 
+const defaultInvoices = [];
+
+const defaultPacks = [];
+
 export const InventoryProvider = ({ children }) => {
   const [categories, setCategories] = useState([]);
   const [inventoryItems, setInventoryItems] = useState([]);
@@ -185,6 +189,147 @@ export const InventoryProvider = ({ children }) => {
     }
   };
 
+  // --- Cart, Invoices, and Packs additions for Phase 2 ---
+  const [cart, setCart] = useState([]);
+  
+  const [invoices, setInvoices] = useState(() => {
+    const saved = localStorage.getItem('stockglass_invoices');
+    return saved ? JSON.parse(saved) : defaultInvoices;
+  });
+
+  const [packs, setPacks] = useState(() => {
+    const saved = localStorage.getItem('stockglass_packs');
+    return saved ? JSON.parse(saved) : defaultPacks;
+  });
+
+  useEffect(() => {
+    localStorage.setItem('stockglass_invoices', JSON.stringify(invoices));
+  }, [invoices]);
+
+  useEffect(() => {
+    localStorage.setItem('stockglass_packs', JSON.stringify(packs));
+  }, [packs]);
+
+  const addToCart = (item, qty = 1) => {
+    setCart(prevCart => {
+      const existing = prevCart.find(i => i.id === item.id);
+      if (existing) {
+        const newQty = existing.qty + qty;
+        if (newQty > item.quantity) {
+          alert(`Maximum quantity validation: Stock limit reached for "${item.name}".`);
+          return prevCart;
+        }
+        return prevCart.map(i => i.id === item.id ? { ...i, qty: newQty } : i);
+      } else {
+        if (qty > item.quantity) {
+          alert(`Maximum quantity validation: Stock limit reached for "${item.name}".`);
+          return prevCart;
+        }
+        return [...prevCart, { ...item, qty }];
+      }
+    });
+  };
+
+  const updateCartQty = (itemId, delta) => {
+    setCart(prevCart => {
+      return prevCart.map(item => {
+        if (item.id === itemId) {
+          const newQty = item.qty + delta;
+          if (newQty <= 0) {
+            return null;
+          }
+          if (newQty > item.quantity) {
+            alert(`Quantity validation error: Exceeds available stock of ${item.quantity} for "${item.name}".`);
+            return item;
+          }
+          return { ...item, qty: newQty };
+        }
+        return item;
+      }).filter(Boolean);
+    });
+  };
+
+  const removeFromCart = (itemId) => {
+    setCart(prevCart => prevCart.filter(item => item.id !== itemId));
+  };
+
+  const clearCart = () => {
+    setCart([]);
+  };
+
+  const addInvoice = (invoice) => {
+    setInvoices(prev => [invoice, ...prev]);
+    setLogs(prev => [
+      {
+        id: Date.now(),
+        action: "Invoice Created",
+        item: invoice.id,
+        details: `Finalized bill for ${invoice.customerName} - Total: $${invoice.amount.toFixed(2)}`,
+        timestamp: new Date().toISOString()
+      },
+      ...prev
+    ]);
+  };
+
+  const addPack = (pack) => {
+    setPacks(prev => [pack, ...prev]);
+    setLogs(prev => [
+      {
+        id: Date.now(),
+        action: "Pack Created",
+        item: pack.name,
+        details: `Created new pack with ${pack.items.length} items`,
+        timestamp: new Date().toISOString()
+      },
+      ...prev
+    ]);
+  };
+
+  const addPackToCart = (pack, navigate) => {
+    let addedAny = false;
+    pack.items.forEach(packItem => {
+      const match = inventoryItems.find(invItem => invItem.name.toLowerCase() === packItem.name.toLowerCase());
+      if (match) {
+        setCart(prevCart => {
+          const existing = prevCart.find(i => i.id === match.id);
+          const currentQty = existing ? existing.qty : 0;
+          const finalQty = currentQty + packItem.qty;
+          if (finalQty > match.quantity) {
+            // Cap at max quantity
+            if (existing) {
+              return prevCart.map(i => i.id === match.id ? { ...i, qty: match.quantity } : i);
+            } else {
+              return [...prevCart, { ...match, qty: match.quantity }];
+            }
+          }
+          if (existing) {
+            return prevCart.map(i => i.id === match.id ? { ...i, qty: finalQty } : i);
+          } else {
+            return [...prevCart, { ...match, qty: packItem.qty }];
+          }
+        });
+        addedAny = true;
+      } else {
+        // Fallback: search by SKU or just use generic item
+        const genericItem = {
+          id: `virtual-${Date.now()}-${Math.random()}`,
+          name: packItem.name,
+          sku: `V-SKU`,
+          sellingPrice: 10.00,
+          quantity: 100,
+          category: 'General',
+          batchNumber: 'B-VIRTUAL'
+        };
+        setCart(prevCart => [...prevCart, { ...genericItem, qty: packItem.qty }]);
+        addedAny = true;
+      }
+    });
+
+    if (addedAny && navigate) {
+      navigate('/sales');
+    }
+  };
+
   return (
     <InventoryContext.Provider value={{
       categories,
@@ -198,7 +343,17 @@ export const InventoryProvider = ({ children }) => {
       deleteInventoryItem,
       updateInventoryItem,
       loading,
-      refreshAll
+      refreshAll,
+      cart,
+      invoices,
+      packs,
+      addToCart,
+      updateCartQty,
+      removeFromCart,
+      clearCart,
+      addInvoice,
+      addPack,
+      addPackToCart
     }}>
       {children}
     </InventoryContext.Provider>

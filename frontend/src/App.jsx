@@ -9,6 +9,10 @@ import AddCategory from './pages/AddCategory';
 import InventoryList from './pages/InventoryList';
 import AddItem from './pages/AddItem';
 import Notifications from './pages/Notifications';
+import SalesBillingTerminal from './pages/SalesBillingTerminal';
+import BundlesManagement from './pages/BundlesManagement';
+import AdvancedAnalytics from './pages/AdvancedAnalytics';
+import InvoiceHistoryExport from './pages/InvoiceHistoryExport';
 
 function AppContent() {
   const [isLoggedIn, setIsLoggedIn] = useState(() => {
@@ -60,6 +64,10 @@ function AppContent() {
         <Route path="/inventory" element={<InventoryList setCurrentView={setCurrentView} />} />
         <Route path="/add_item" element={<AddItem setCurrentView={setCurrentView} />} />
         <Route path="/notifications" element={<Notifications setCurrentView={setCurrentView} />} />
+        <Route path="/sales" element={<SalesBillingTerminal setCurrentView={setCurrentView} />} />
+        <Route path="/bundles" element={<BundlesManagement setCurrentView={setCurrentView} />} />
+        <Route path="/analytics" element={<AdvancedAnalytics setCurrentView={setCurrentView} />} />
+        <Route path="/export" element={<InvoiceHistoryExport setCurrentView={setCurrentView} />} />
         <Route path="*" element={<Navigate to="/dashboard" replace />} />
       </Routes>
     </AppLayout>

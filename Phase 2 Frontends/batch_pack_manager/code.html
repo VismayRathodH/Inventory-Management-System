@@ -1,0 +1,481 @@
+<!DOCTYPE html><html class="light" lang="en" style=""><head>
+<meta charset="utf-8">
+<meta content="width=device-width, initial-scale=1.0" name="viewport">
+<title>StockGlass | Bundles Management</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;600;700;800&amp;family=Hanken+Grotesk:wght@400;500;600&amp;display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
+<style>
+        .glass-panel {
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            background: rgba(255, 248, 246, 0.4);
+            border: 1px solid rgba(255, 255, 255, 0.6);
+        }
+        .glass-card {
+            backdrop-filter: blur(8px);
+            -webkit-backdrop-filter: blur(8px);
+            background: rgba(255, 255, 255, 0.4);
+            border: 1px solid rgba(255, 255, 255, 0.7);
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        .glass-card:hover {
+            background: rgba(255, 255, 255, 0.6);
+            transform: translateY(-4px);
+            box-shadow: 0 12px 24px -10px rgba(164, 62, 0, 0.1);
+        }
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+            vertical-align: middle;
+        }
+        body {
+            background-color: #fff8f6;
+            background-image: 
+                radial-gradient(at 0% 0%, rgba(255, 109, 31, 0.05) 0px, transparent 50%),
+                radial-gradient(at 100% 100%, rgba(0, 101, 145, 0.05) 0px, transparent 50%);
+            min-height: 100vh;
+        }
+        /* Custom Scrollbar for Glass */
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: rgba(164, 62, 0, 0.2); border-radius: 10px; }
+    </style>
+<script id="tailwind-config">
+        tailwind.config = {
+          darkMode: "class",
+          theme: {
+            extend: {
+              "colors": {
+                      "primary-container": "#ff6d1f",
+                      "on-error-container": "#93000a",
+                      "on-primary-container": "#5b1f00",
+                      "on-surface-variant": "#594137",
+                      "surface-container": "#ffe9e2",
+                      "on-tertiary": "#ffffff",
+                      "on-background": "#261813",
+                      "surface-container-lowest": "#ffffff",
+                      "surface-container-highest": "#f7ddd3",
+                      "secondary": "#5f5e5e",
+                      "on-error": "#ffffff",
+                      "on-secondary-fixed": "#1b1c1c",
+                      "inverse-on-surface": "#ffede7",
+                      "surface-container-high": "#fde3d9",
+                      "tertiary-container": "#00a4e9",
+                      "secondary-fixed": "#e5e2e1",
+                      "error-container": "#ffdad6",
+                      "on-secondary-fixed-variant": "#474746",
+                      "primary-fixed": "#ffdbcd",
+                      "on-primary-fixed-variant": "#7d2d00",
+                      "surface-bright": "#fff8f6",
+                      "on-primary": "#ffffff",
+                      "inverse-surface": "#3c2d27",
+                      "on-primary-fixed": "#360f00",
+                      "surface-variant": "#f7ddd3",
+                      "surface-dim": "#eed5cb",
+                      "secondary-fixed-dim": "#c8c6c5",
+                      "on-tertiary-container": "#003650",
+                      "tertiary-fixed": "#c9e6ff",
+                      "error": "#ba1a1a",
+                      "surface-container-low": "#fff1ec",
+                      "outline-variant": "#e1bfb2",
+                      "tertiary-fixed-dim": "#89ceff",
+                      "on-secondary": "#ffffff",
+                      "primary": "#a43e00",
+                      "inverse-primary": "#ffb596",
+                      "surface-tint": "#a43e00",
+                      "outline": "#8d7165",
+                      "surface": "#fff8f6",
+                      "primary-fixed-dim": "#ffb596",
+                      "on-surface": "#261813",
+                      "secondary-container": "#e2dfde",
+                      "tertiary": "#006591",
+                      "on-secondary-container": "#636262",
+                      "background": "#fff8f6",
+                      "on-tertiary-fixed-variant": "#004c6e",
+                      "on-tertiary-fixed": "#001e2f"
+              },
+              "borderRadius": {
+                      "DEFAULT": "0.25rem",
+                      "lg": "0.5rem",
+                      "xl": "0.75rem",
+                      "full": "9999px"
+              },
+              "spacing": {
+                      "gutter": "24px",
+                      "unit": "8px",
+                      "container-padding-mobile": "16px",
+                      "glass-padding": "20px",
+                      "container-padding-desktop": "32px"
+              },
+              "fontFamily": {
+                      "label-md": ["hankenGrotesk"],
+                      "headline-lg": ["manrope"],
+                      "label-sm": ["hankenGrotesk"],
+                      "body-md": ["hankenGrotesk"],
+                      "headline-md": ["manrope"],
+                      "headline-lg-mobile": ["manrope"],
+                      "display-lg": ["manrope"],
+                      "body-lg": ["hankenGrotesk"]
+              },
+              "fontSize": {
+                      "label-md": ["14px", {"lineHeight": "1.2", "letterSpacing": "0.05em", "fontWeight": "600"}],
+                      "headline-lg": ["32px", {"lineHeight": "1.2", "fontWeight": "600"}],
+                      "label-sm": ["12px", {"lineHeight": "1.2", "fontWeight": "500"}],
+                      "body-md": ["16px", {"lineHeight": "1.5", "fontWeight": "400"}],
+                      "headline-md": ["24px", {"lineHeight": "1.3", "fontWeight": "600"}],
+                      "headline-lg-mobile": ["24px", {"lineHeight": "1.2", "fontWeight": "600"}],
+                      "display-lg": ["48px", {"lineHeight": "1.1", "letterSpacing": "-0.02em", "fontWeight": "700"}],
+                      "body-lg": ["18px", {"lineHeight": "1.6", "fontWeight": "400"}]
+              }
+            },
+          },
+        }
+    </script>
+</head>
+<body class="font-body-md text-on-surface overflow-x-hidden">
+<!-- Side Navigation Shell -->
+<aside class="fixed h-screen w-[280px] left-0 top-0 bg-surface/40 backdrop-blur-xl border-r border-white/60 shadow-sm flex flex-col p-gutter gap-unit z-50">
+<div class="mb-8 px-2">
+<h1 class="font-headline-md text-headline-md font-bold text-primary">StockGlass</h1>
+<p class="text-on-surface-variant font-label-sm">Inventory Suite</p>
+</div>
+<nav class="flex-1 flex flex-col gap-2"><a class="flex items-center gap-3 px-4 py-3 rounded-xl text-on-surface-variant transition-colors group" href="#">
+<span class="material-symbols-outlined text-xl">dashboard</span>
+<span class="font-label-md text-label-md">Dashboard</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-3 rounded-xl text-on-surface-variant transition-colors group" href="#">
+<span class="material-symbols-outlined text-xl">category</span>
+<span class="font-label-md text-label-md">Categories</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-3 rounded-xl text-on-surface-variant transition-colors group" href="#">
+<span class="material-symbols-outlined text-xl">inventory</span>
+<span class="font-label-md text-label-md">Inventory</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-3 rounded-xl text-on-surface-variant transition-colors group" href="#">
+<span class="material-symbols-outlined text-xl">notifications</span>
+<span class="font-label-md text-label-md">Notification</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-3 rounded-xl text-on-surface-variant transition-colors group" href="#">
+<span class="material-symbols-outlined text-xl">shopping_cart</span>
+<span class="font-label-md text-label-md">Sales</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-3 rounded-xl transition-colors group bg-primary text-on-primary" href="#">
+<span class="material-symbols-outlined text-xl">package_2</span>
+<span class="font-label-md text-label-md">Bundles</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-3 rounded-xl text-on-surface-variant transition-colors group" href="#">
+<span class="material-symbols-outlined text-xl">leaderboard</span>
+<span class="font-label-md text-label-md">Analytics</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-3 rounded-xl text-on-surface-variant transition-colors group" href="#">
+<span class="material-symbols-outlined text-xl">ios_share</span>
+<span class="font-label-md text-label-md">Export</span>
+</a></nav>
+<button class="bg-primary-container text-on-primary-container px-6 py-4 rounded-xl font-bold flex items-center justify-center gap-2 shadow-lg hover:brightness-110 active:scale-[0.98] transition-all mb-4">
+<span class="material-symbols-outlined">add_circle</span>
+<span class="">Create New Order</span>
+</button>
+<div class="pt-4 border-t border-white/40 flex flex-col gap-2">
+<a class="flex items-center gap-3 px-4 py-3 rounded-xl text-on-surface-variant hover:bg-white/20 transition-colors" href="#">
+<span class="material-symbols-outlined text-xl">settings</span>
+<span class="font-label-md text-label-md">Settings</span>
+</a>
+
+</div>
+</aside>
+<!-- Main Content Canvas -->
+<main class="ml-[280px] min-h-screen">
+<!-- Top Navigation -->
+<header class="fixed top-0 right-0 left-[280px] h-16 bg-surface/60 backdrop-blur-md border-b border-white/60 shadow-sm flex justify-between items-center px-container-padding-desktop z-40">
+<div class="flex items-center gap-4 flex-1">
+<div class="relative w-full max-w-md">
+<span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-on-surface-variant">search</span>
+<input class="w-full bg-white/10 border-0 border-b-2 border-white/40 focus:border-primary-container focus:ring-0 text-label-md px-10 py-2 transition-all" placeholder="Search bundles..." type="text">
+</div>
+</div>
+<div class="flex items-center gap-6">
+<button class="relative text-on-surface-variant hover:text-primary transition-colors">
+
+<span class="absolute top-0 right-0 w-2 h-2 bg-primary-container rounded-full"></span>
+</button>
+<div class="flex items-center gap-3 pl-6 border-l border-white/40">
+<div class="text-right">
+<p class="font-label-md text-label-md">Alex River</p>
+<p class="text-[10px] text-on-surface-variant uppercase tracking-widest">Inventory Manager</p>
+</div>
+<div class="w-10 h-10 rounded-full bg-surface-container overflow-hidden border-2 border-white">
+<img class="w-full h-full object-cover" data-alt="A professional studio portrait of a young male inventory manager with a friendly expression, wearing a minimalist neutral-colored polo shirt. The lighting is soft and high-key, reflecting a modern corporate aesthetic with a warm, cream-colored background consistent with a high-end software environment." src="https://lh3.googleusercontent.com/aida-public/AB6AXuCiBY2QLJ-pq0-xQZkbwZCTOzotqfpyGGKC0qjGTYX3YSHpkPOtLh3nPSw8WL_4NSvnLGQ6D32bIlvLnj7rm9yzSv1XFvlB9FzcYX1jAeZ85cdxxNj7RP_sbBWl4SRkJOp8bqI3u4-Lprmd-SzQSDbsm5CywWT2nH8u5O2h84smt6BbR6_RlJVPrteUfqry9NUu6n97L0Ga7oDS51XTezUro8M0_CpY-ve3hBHzVYVRCeFSPjceWdnh">
+</div>
+</div>
+</div>
+</header>
+<!-- Content Body -->
+<div class="pt-24 px-container-padding-desktop pb-12">
+<!-- Dashboard Hero Section -->
+<div class="flex justify-between items-end mb-8">
+<div>
+<h2 class="font-display-lg text-display-lg text-on-background">Packs &amp; Bundles</h2>
+<p class="text-on-surface-variant font-body-lg">Manage multi-item inventory sets and bulk logistics.</p>
+</div>
+<div class="flex gap-3">
+<button class="glass-panel px-6 py-3 rounded-xl font-label-md flex items-center gap-2 hover:bg-white/40 transition-colors">
+<span class="material-symbols-outlined">filter_list</span>
+                        Filter
+                    </button>
+<button class="bg-primary-container text-on-primary text-label-md px-8 py-3 rounded-xl flex items-center gap-2 shadow-xl hover:shadow-primary-container/20 transition-all text-on-primary-container" onclick="document.getElementById('modal-overlay').classList.remove('hidden')">
+<span class="material-symbols-outlined">inventory_2</span>
+                        Create New Pack
+                    </button>
+</div>
+</div>
+<!-- Bento Stats Grid -->
+<div class="grid grid-cols-12 gap-gutter mb-gutter">
+<div class="col-span-8 glass-panel rounded-[2rem] p-8 flex items-center justify-between overflow-hidden relative group">
+<div class="z-10">
+<p class="text-on-surface-variant font-label-md uppercase tracking-widest mb-2">Efficiency Rating</p>
+<h3 class="font-display-lg text-display-lg text-primary mb-2">94.2%</h3>
+<p class="text-on-surface-variant max-w-xs">Your bundle fulfillment speed has increased by 12% this week.</p>
+</div>
+<div class="w-64 h-32 z-10">
+<!-- Tiny trend visualization placeholder -->
+<div class="flex items-end gap-2 h-full">
+<div class="w-full bg-primary-container/20 h-[30%] rounded-t-lg"></div>
+<div class="w-full bg-primary-container/30 h-[50%] rounded-t-lg"></div>
+<div class="w-full bg-primary-container/40 h-[40%] rounded-t-lg"></div>
+<div class="w-full bg-primary-container/60 h-[70%] rounded-t-lg"></div>
+<div class="w-full bg-primary-container/80 h-[90%] rounded-t-lg"></div>
+<div class="w-full bg-primary-container h-[85%] rounded-t-lg"></div>
+</div>
+</div>
+
+</div>
+<div class="col-span-4 glass-panel rounded-[2rem] p-8 bg-tertiary-container/10 border-tertiary-container/20">
+<p class="text-on-tertiary-container font-label-md uppercase tracking-widest mb-2">Active Bundles</p>
+<h3 class="font-display-lg text-display-lg text-tertiary mb-2">28</h3>
+<div class="flex items-center gap-2 text-on-tertiary-container">
+<span class="material-symbols-outlined text-green-600">trending_up</span>
+<span class="font-label-md">+4 from last month</span>
+</div>
+</div>
+</div>
+<!-- Bundles Glass Grid -->
+<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-gutter">
+<!-- Pack Card 1 -->
+<div class="glass-card rounded-[2rem] p-6 flex flex-col">
+<div class="flex justify-between items-start mb-4">
+<div class="w-12 h-12 rounded-2xl bg-primary-container/10 flex items-center justify-center text-primary-container">
+<span class="material-symbols-outlined text-2xl" style="font-variation-settings: 'FILL' 1;">clean_hands</span>
+</div>
+<span class="bg-green-100 text-green-700 px-3 py-1 rounded-full text-[10px] font-bold tracking-widest uppercase">In Stock</span>
+</div>
+<h4 class="font-headline-md text-headline-md mb-1">Hygiene Pack</h4>
+<p class="text-on-surface-variant font-label-sm mb-6">Standard quarterly office sanitization set.</p>
+<div class="space-y-3 mb-8 flex-1">
+<div class="flex justify-between items-center border-b border-white/40 pb-2">
+<span class="text-on-surface-variant text-label-md">Sanitizer 500ml</span>
+<span class="font-bold text-primary">x 12</span>
+</div>
+<div class="flex justify-between items-center border-b border-white/40 pb-2">
+<span class="text-on-surface-variant text-label-md">Latex Gloves (L)</span>
+<span class="font-bold text-primary">x 5</span>
+</div>
+<div class="flex justify-between items-center border-b border-white/40 pb-2">
+<span class="text-on-surface-variant text-label-md">Face Masks (50pk)</span>
+<span class="font-bold text-primary">x 2</span>
+</div>
+</div>
+<div class="flex gap-2">
+<button class="flex-1 py-3 rounded-xl font-label-md flex items-center justify-center gap-2 hover:bg-primary-container transition-colors bg-primary-container text-on-primary-container">
+<span class="material-symbols-outlined text-lg">receipt_long</span>
+                            Add to Bill
+                        </button>
+<button class="w-12 h-12 glass-panel rounded-xl flex items-center justify-center text-on-surface-variant hover:text-primary transition-all">
+<span class="material-symbols-outlined">edit</span>
+</button>
+</div>
+</div>
+<!-- Pack Card 2 -->
+<div class="glass-card rounded-[2rem] p-6 flex flex-col">
+<div class="flex justify-between items-start mb-4">
+<div class="w-12 h-12 rounded-2xl bg-tertiary-container/10 flex items-center justify-center text-tertiary">
+<span class="material-symbols-outlined text-2xl" style="font-variation-settings: 'FILL' 1;">laptop_mac</span>
+</div>
+<span class="bg-primary-container/20 text-primary-container px-3 py-1 rounded-full text-[10px] font-bold tracking-widest uppercase">Low Stock</span>
+</div>
+<h4 class="font-headline-md text-headline-md mb-1">Onboarding Kit</h4>
+<p class="text-on-surface-variant font-label-sm mb-6">New hire hardware and peripheral bundle.</p>
+<div class="space-y-3 mb-8 flex-1">
+<div class="flex justify-between items-center border-b border-white/40 pb-2">
+<span class="text-on-surface-variant text-label-md">Pro Wireless Mouse</span>
+<span class="font-bold text-primary">x 1</span>
+</div>
+<div class="flex justify-between items-center border-b border-white/40 pb-2">
+<span class="text-on-surface-variant text-label-md">USB-C Hub (7-in-1)</span>
+<span class="font-bold text-primary">x 1</span>
+</div>
+<div class="flex justify-between items-center border-b border-white/40 pb-2">
+<span class="text-on-surface-variant text-label-md">Laptop Stand</span>
+<span class="font-bold text-primary">x 1</span>
+</div>
+</div>
+<div class="flex gap-2">
+<button class="flex-1 py-3 rounded-xl font-label-md flex items-center justify-center gap-2 hover:bg-primary-container transition-colors bg-primary-container text-on-primary-container">
+<span class="material-symbols-outlined text-lg">receipt_long</span>
+                            Add to Bill
+                        </button>
+<button class="w-12 h-12 glass-panel rounded-xl flex items-center justify-center text-on-surface-variant hover:text-primary transition-all">
+<span class="material-symbols-outlined">edit</span>
+</button>
+</div>
+</div>
+<!-- Pack Card 3 -->
+<div class="glass-card rounded-[2rem] p-6 flex flex-col">
+<div class="flex justify-between items-start mb-4">
+<div class="w-12 h-12 rounded-2xl bg-surface-container-highest flex items-center justify-center text-on-surface-variant">
+<span class="material-symbols-outlined text-2xl" style="font-variation-settings: 'FILL' 1;">restaurant</span>
+</div>
+<span class="bg-green-100 text-green-700 px-3 py-1 rounded-full text-[10px] font-bold tracking-widest uppercase">In Stock</span>
+</div>
+<h4 class="font-headline-md text-headline-md mb-1">Cafeteria Restock</h4>
+<p class="text-on-surface-variant font-label-sm mb-6">Bulk beverages and snacks weekly replenishment.</p>
+<div class="space-y-3 mb-8 flex-1">
+<div class="flex justify-between items-center border-b border-white/40 pb-2">
+<span class="text-on-surface-variant text-label-md">Coffee Beans (1kg)</span>
+<span class="font-bold text-primary">x 10</span>
+</div>
+<div class="flex justify-between items-center border-b border-white/40 pb-2">
+<span class="text-on-surface-variant text-label-md">Almond Milk (1L)</span>
+<span class="font-bold text-primary">x 24</span>
+</div>
+<div class="flex justify-between items-center border-b border-white/40 pb-2">
+<span class="text-on-surface-variant text-label-md">Energy Bars (Box 12)</span>
+<span class="font-bold text-primary">x 8</span>
+</div>
+</div>
+<div class="flex gap-2">
+<button class="flex-1 py-3 rounded-xl font-label-md flex items-center justify-center gap-2 hover:bg-primary-container transition-colors bg-primary-container text-on-primary-container">
+<span class="material-symbols-outlined text-lg">receipt_long</span>
+                            Add to Bill
+                        </button>
+<button class="w-12 h-12 glass-panel rounded-xl flex items-center justify-center text-on-surface-variant hover:text-primary transition-all">
+<span class="material-symbols-outlined">edit</span>
+</button>
+</div>
+</div>
+<!-- Add New Pack Card (Ghost Style) -->
+
+</div>
+</div>
+</main>
+<!-- Create Bundle Modal Overlay -->
+<div class="fixed inset-0 bg-on-background/20 backdrop-blur-sm z-[100] flex items-center justify-center p-4 hidden" id="modal-overlay">
+<div class="glass-panel w-full max-w-4xl max-h-[90vh] rounded-[2.5rem] shadow-2xl overflow-hidden flex flex-col animate-in fade-in zoom-in duration-300">
+<!-- Modal Header -->
+<div class="p-8 border-b border-white/40 flex justify-between items-center">
+<div>
+<h3 class="font-headline-lg text-headline-lg text-on-background">Create New Pack</h3>
+<p class="text-on-surface-variant">Select inventory items and define quantities.</p>
+</div>
+<button class="w-10 h-10 rounded-full hover:bg-white/40 flex items-center justify-center transition-colors" onclick="document.getElementById('modal-overlay').classList.add('hidden')">
+<span class="material-symbols-outlined">close</span>
+</button>
+</div>
+<!-- Modal Content -->
+<div class="flex-1 overflow-y-auto p-8 flex flex-col md:flex-row gap-8">
+<!-- Left: Form -->
+<div class="flex-1 space-y-6">
+<div class="space-y-2">
+<label class="text-label-md text-on-surface-variant uppercase tracking-wider">Pack Name</label>
+<input class="w-full bg-white/20 border-0 border-b-2 border-primary-container focus:ring-0 text-headline-md py-2" placeholder="e.g. Hygiene Pack" type="text">
+</div>
+<div class="space-y-4">
+<div class="flex justify-between items-center">
+<label class="text-label-md text-on-surface-variant uppercase tracking-wider">Selected Items</label>
+<button class="text-primary font-label-md flex items-center gap-1 hover:underline">
+<span class="material-symbols-outlined text-sm">add_circle</span>
+                                Add Item
+                            </button>
+</div>
+<div class="space-y-3">
+<!-- Item Row 1 -->
+<div class="flex items-center gap-4 bg-white/40 p-4 rounded-2xl">
+<div class="w-10 h-10 rounded-xl bg-primary-fixed flex items-center justify-center text-primary">
+<span class="material-symbols-outlined">vaccines</span>
+</div>
+<div class="flex-1">
+<p class="font-label-md">Hand Sanitizer</p>
+<p class="text-[10px] text-on-surface-variant">SKU: HS-500-GL</p>
+</div>
+<div class="flex items-center gap-3">
+<button class="w-8 h-8 rounded-full border border-white/60 flex items-center justify-center hover:bg-white">-</button>
+<span class="font-bold w-6 text-center">12</span>
+<button class="w-8 h-8 rounded-full border border-white/60 flex items-center justify-center hover:bg-white">+</button>
+</div>
+<button class="text-error/60 hover:text-error transition-colors">
+<span class="material-symbols-outlined">delete</span>
+</button>
+</div>
+</div>
+</div>
+</div>
+<!-- Right: Preview Card -->
+<div class="w-full md:w-80">
+<label class="text-label-md text-on-surface-variant uppercase tracking-wider mb-4 block">Visual Icon</label>
+<div class="glass-card aspect-square rounded-3xl flex flex-col items-center justify-center gap-4 border-2 border-dashed border-primary/40 relative overflow-hidden group">
+<span class="material-symbols-outlined text-5xl text-primary/40 group-hover:text-primary transition-colors">image</span>
+<p class="text-on-surface-variant text-label-sm text-center px-6">Upload or select a pack representative icon</p>
+<input class="absolute inset-0 opacity-0 cursor-pointer" type="file">
+</div>
+<div class="mt-8 bg-surface-container-high/40 rounded-3xl p-6 border border-white/40">
+<p class="text-label-sm text-on-surface-variant uppercase tracking-widest mb-4">Estimated Value</p>
+<div class="flex justify-between items-end">
+<span class="font-display-lg text-display-lg text-primary">$412.50</span>
+</div>
+<p class="text-[10px] mt-2 text-on-surface-variant italic">Calculated based on current unit prices</p>
+</div>
+</div>
+</div>
+<!-- Modal Footer -->
+<div class="p-8 bg-white/40 border-t border-white/40 flex justify-end gap-4">
+<button class="px-8 py-3 rounded-xl font-label-md text-on-surface-variant hover:bg-white/60 transition-colors" onclick="document.getElementById('modal-overlay').classList.add('hidden')">
+                    Discard Draft
+                </button>
+<button class="bg-primary-container text-on-primary-container px-10 py-3 rounded-xl font-bold shadow-lg hover:shadow-primary-container/20 active:scale-95 transition-all">
+                    Create Pack
+                </button>
+</div>
+</div>
+</div>
+<!-- Micro-interaction Scripts -->
+<script>
+        // Tab highlight simulation
+        document.querySelectorAll('nav a').forEach(link => {
+            link.addEventListener('click', (e) => {
+                document.querySelectorAll('nav a').forEach(l => {
+                    l.classList.remove('text-primary', 'font-bold', 'border-r-2', 'border-primary', 'bg-white/20');
+                    l.classList.add('text-on-surface-variant');
+                });
+                link.classList.add('text-primary', 'font-bold', 'border-r-2', 'border-primary', 'bg-white/20');
+                link.classList.remove('text-on-surface-variant');
+            });
+        });
+
+        // Simple notification toast simulation for "Add to Bill"
+        document.querySelectorAll('button').forEach(btn => {
+            if(btn.innerText.includes('Add to Bill')) {
+                btn.addEventListener('click', () => {
+                    const originalText = btn.innerHTML;
+                    btn.innerHTML = '<span class="material-symbols-outlined">check_circle</span> Added!';
+                    btn.classList.replace('bg-primary', 'bg-green-600');
+                    setTimeout(() => {
+                        btn.innerHTML = originalText;
+                        btn.classList.replace('bg-green-600', 'bg-primary');
+                    }, 2000);
+                });
+            }
+        });
+    </script>
+
+
+</body></html>
