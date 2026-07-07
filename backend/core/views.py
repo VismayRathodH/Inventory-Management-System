@@ -126,3 +126,20 @@ class NotificationViewSet(viewsets.ModelViewSet):
                 Notification.objects.filter(inventory_item=item, type__in=['EXPIRED', 'EXPIRING_SOON']).delete()
 
         return Notification.objects.all().order_by('-created_at')
+
+from .models import Bundle, Sale
+from .serializers import BundleSerializer, SaleSerializer
+
+class BundleViewSet(viewsets.ModelViewSet):
+    queryset = Bundle.objects.all().order_by('-created_date')
+    serializer_class = BundleSerializer
+    permission_classes = [IsAuthenticated]
+    filter_backends = [filters.SearchFilter]
+    search_fields = ['name', 'description']
+
+class SaleViewSet(viewsets.ModelViewSet):
+    queryset = Sale.objects.all().order_by('-created_at')
+    serializer_class = SaleSerializer
+    permission_classes = [IsAuthenticated]
+    filter_backends = [filters.SearchFilter]
+    search_fields = ['invoice_number', 'customer_name']

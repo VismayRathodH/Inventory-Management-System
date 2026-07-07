@@ -4,13 +4,14 @@ import api from '../api/axios';
 export const InventoryContext = createContext();
 
 const defaultInvoices = [];
-
 const defaultPacks = [];
 
 export const InventoryProvider = ({ children }) => {
   const [categories, setCategories] = useState([]);
   const [inventoryItems, setInventoryItems] = useState([]);
   const [notifications, setNotifications] = useState([]);
+  const [packs, setPacks] = useState([]);
+  const [invoices, setInvoices] = useState([]);
   const [logs, setLogs] = useState(() => {
     const savedLogs = localStorage.getItem('inventory_logs');
     return savedLogs ? JSON.parse(savedLogs) : [];
@@ -77,12 +78,58 @@ export const InventoryProvider = ({ children }) => {
     }
   }, []);
 
+  const fetchPacks = useCallback(async () => {
+    try {
+      const response = await api.get('/bundles/');
+      // Map API bundles to local packs format
+      const mapped = response.data.map(b => ({
+        id: b.id.toString(), // frontend expects string in some places
+        name: b.name,
+        description: b.description,
+        icon: b.icon,
+        status: b.status,
+        items: b.items.map(i => ({
+          name: i.name,
+          inventory_item_id: i.inventory_item_id,
+          qty: i.quantity
+        }))
+      }));
+      setPacks(mapped);
+    } catch (err) {
+      console.error("Failed to fetch packs", err);
+    }
+  }, []);
+
+  const fetchInvoices = useCallback(async () => {
+    try {
+      const response = await api.get('/sales/');
+      const mapped = response.data.map(s => ({
+        id: s.invoice_number,
+        customerName: s.customer_name,
+        customerEmail: s.customer_email,
+        issuedDate: new Date(s.created_at).toISOString().split('T')[0],
+        status: s.payment_status,
+        paymentMethod: s.payment_method,
+        notes: s.notes,
+        totalQuantity: s.total_quantity,
+        taxPercentage: parseFloat(s.tax_percentage),
+        taxAmount: parseFloat(s.tax_amount),
+        subtotal: parseFloat(s.subtotal),
+        amount: parseFloat(s.grand_total), // backwards compatibility for amount
+        items: s.items.map(i => ({ name: i.item_name, qty: i.quantity, price: parseFloat(i.price) }))
+      }));
+      setInvoices(mapped);
+    } catch (err) {
+      console.error("Failed to fetch invoices", err);
+    }
+  }, []);
+
   const refreshAll = useCallback(async () => {
     if (!localStorage.getItem('token')) return;
     setLoading(true);
-    await Promise.all([fetchCategories(), fetchInventory(), fetchNotifications()]);
+    await Promise.all([fetchCategories(), fetchInventory(), fetchNotifications(), fetchPacks(), fetchInvoices()]);
     setLoading(false);
-  }, [fetchCategories, fetchInventory, fetchNotifications]);
+  }, [fetchCategories, fetchInventory, fetchNotifications, fetchPacks, fetchInvoices]);
 
   useEffect(() => {
     refreshAll();
@@ -189,26 +236,7 @@ export const InventoryProvider = ({ children }) => {
     }
   };
 
-  // --- Cart, Invoices, and Packs additions for Phase 2 ---
   const [cart, setCart] = useState([]);
-  
-  const [invoices, setInvoices] = useState(() => {
-    const saved = localStorage.getItem('stockglass_invoices');
-    return saved ? JSON.parse(saved) : defaultInvoices;
-  });
-
-  const [packs, setPacks] = useState(() => {
-    const saved = localStorage.getItem('stockglass_packs');
-    return saved ? JSON.parse(saved) : defaultPacks;
-  });
-
-  useEffect(() => {
-    localStorage.setItem('stockglass_invoices', JSON.stringify(invoices));
-  }, [invoices]);
-
-  useEffect(() => {
-    localStorage.setItem('stockglass_packs', JSON.stringify(packs));
-  }, [packs]);
 
   const addToCart = (item, qty = 1) => {
     setCart(prevCart => {
@@ -257,51 +285,124 @@ export const InventoryProvider = ({ children }) => {
     setCart([]);
   };
 
-  const addInvoice = (invoice) => {
-    setInvoices(prev => [invoice, ...prev]);
-    setLogs(prev => [
-      {
-        id: Date.now(),
-        action: "Invoice Created",
-        item: invoice.id,
-        details: `Finalized bill for ${invoice.customerName} - Total: $${invoice.amount.toFixed(2)}`,
-        timestamp: new Date().toISOString()
-      },
-      ...prev
-    ]);
+  const addInvoice = async (invoice) => {
+    try {
+      await api.post('/sales/', {
+        invoice_number: invoice.id,
+        customer_name: invoice.customerName,
+        customer_email: invoice.customerEmail,
+        total_quantity: invoice.totalQuantity,
+        tax_percentage: invoice.taxPercentage,
+        tax_amount: invoice.taxAmount,
+        subtotal: invoice.subtotal,
+        grand_total: invoice.amount,
+        payment_status: invoice.status || 'PAID',
+        payment_method: invoice.paymentMethod || 'CASH',
+        notes: invoice.notes || '',
+        items: invoice.items.map(i => ({
+          item_name: i.name,
+          quantity: i.qty,
+          price: i.price
+        }))
+      });
+      await fetchInvoices();
+      setLogs(prev => [
+        {
+          id: Date.now(),
+          action: "Invoice Created",
+          item: invoice.id,
+          details: `Finalized bill for ${invoice.customerName} - Total: $${invoice.amount.toFixed(2)}`,
+          timestamp: new Date().toISOString()
+        },
+        ...prev
+      ]);
+    } catch (err) {
+      throw new Error("Failed to create sale invoice");
+    }
   };
 
-  const addPack = (pack) => {
-    setPacks(prev => [pack, ...prev]);
-    setLogs(prev => [
-      {
-        id: Date.now(),
-        action: "Pack Created",
-        item: pack.name,
-        details: `Created new pack with ${pack.items.length} items`,
-        timestamp: new Date().toISOString()
-      },
-      ...prev
-    ]);
+  const addPack = async (pack) => {
+    try {
+      await api.post('/bundles/', {
+        name: pack.name,
+        description: pack.description,
+        icon: pack.icon,
+        items: pack.items.map(i => ({
+          inventory_item_id: i.inventory_item_id,
+          quantity: i.qty
+        }))
+      });
+      await fetchPacks();
+      setLogs(prev => [
+        {
+          id: Date.now(),
+          action: "Pack Created",
+          item: pack.name,
+          details: `Created new pack with ${pack.items.length} items`,
+          timestamp: new Date().toISOString()
+        },
+        ...prev
+      ]);
+    } catch (err) {
+      if (err.response?.data?.name) {
+        throw new Error(err.response.data.name[0]);
+      }
+      throw new Error("Failed to create bundle");
+    }
+  };
+
+  const updatePack = async (id, updatedPack) => {
+    try {
+      await api.patch(`/bundles/${id}/`, {
+        name: updatedPack.name,
+        description: updatedPack.description,
+        icon: updatedPack.icon,
+        items: updatedPack.items.map(i => ({
+          inventory_item_id: i.inventory_item_id,
+          quantity: i.qty
+        }))
+      });
+      await fetchPacks();
+    } catch (err) {
+      throw new Error("Failed to update bundle");
+    }
+  };
+
+  const deletePack = async (id) => {
+    try {
+      await api.delete(`/bundles/${id}/`);
+      await fetchPacks();
+    } catch (err) {
+      throw new Error("Failed to delete bundle");
+    }
   };
 
   const addPackToCart = (pack, navigate) => {
+    // 1. Validation pass: verify all items have sufficient stock
+    for (const packItem of pack.items) {
+      const match = inventoryItems.find(invItem => invItem.id === packItem.inventory_item_id || invItem.name.toLowerCase() === packItem.name.toLowerCase());
+      if (match) {
+        const existing = cart.find(i => i.id === match.id);
+        const currentQty = existing ? existing.qty : 0;
+        const finalQty = currentQty + packItem.qty;
+        if (finalQty > match.quantity) {
+          alert(`Validation Failed: Insufficient stock for "${match.name}". Required: ${finalQty}, Available: ${match.quantity}.`);
+          return; // Reject entire bundle
+        }
+      } else {
+        // If it's a virtual item from legacy, we just skip strict validation since we don't know real stock
+      }
+    }
+
+    // 2. Execution pass: all items valid, add them
     let addedAny = false;
     pack.items.forEach(packItem => {
-      const match = inventoryItems.find(invItem => invItem.name.toLowerCase() === packItem.name.toLowerCase());
+      const match = inventoryItems.find(invItem => invItem.id === packItem.inventory_item_id || invItem.name.toLowerCase() === packItem.name.toLowerCase());
       if (match) {
         setCart(prevCart => {
           const existing = prevCart.find(i => i.id === match.id);
           const currentQty = existing ? existing.qty : 0;
           const finalQty = currentQty + packItem.qty;
-          if (finalQty > match.quantity) {
-            // Cap at max quantity
-            if (existing) {
-              return prevCart.map(i => i.id === match.id ? { ...i, qty: match.quantity } : i);
-            } else {
-              return [...prevCart, { ...match, qty: match.quantity }];
-            }
-          }
           if (existing) {
             return prevCart.map(i => i.id === match.id ? { ...i, qty: finalQty } : i);
           } else {
@@ -353,6 +454,8 @@ export const InventoryProvider = ({ children }) => {
       clearCart,
       addInvoice,
       addPack,
+      updatePack,
+      deletePack,
       addPackToCart
     }}>
       {children}

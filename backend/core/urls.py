@@ -1,11 +1,13 @@
 from django.urls import path, include
 from rest_framework.routers import DefaultRouter
-from .views import health_check, login_view, CategoryViewSet, InventoryItemViewSet, NotificationViewSet
+from .views import health_check, login_view, CategoryViewSet, InventoryItemViewSet, NotificationViewSet, BundleViewSet, SaleViewSet
 
 router = DefaultRouter()
 router.register(r'categories', CategoryViewSet)
 router.register(r'inventory', InventoryItemViewSet)
 router.register(r'notifications', NotificationViewSet)
+router.register(r'bundles', BundleViewSet)
+router.register(r'sales', SaleViewSet)
 
 urlpatterns = [
     path('health/', health_check, name='health-check'),

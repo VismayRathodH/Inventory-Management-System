@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { InventoryContext } from '../context/InventoryContext';
 
 const BundlesManagement = () => {
-  const { packs, inventoryItems, addPack, addPackToCart } = useContext(InventoryContext);
+  const { packs, inventoryItems, addPack, updatePack, deletePack, addPackToCart } = useContext(InventoryContext);
   const navigate = useNavigate();
 
   const totalAvailablePacks = packs.filter(p => p.status === 'In Stock').length;
@@ -23,6 +23,8 @@ const BundlesManagement = () => {
   }).length;
 
   const [showModal, setShowModal] = useState(false);
+  const [editingPackId, setEditingPackId] = useState(null);
+  const [packToDelete, setPackToDelete] = useState(null);
   const [packName, setPackName] = useState('');
   const [packDescription, setPackDescription] = useState('');
   const [selectedIcon, setSelectedIcon] = useState('clean_hands');
@@ -69,34 +71,70 @@ const BundlesManagement = () => {
     return sum + itemRow.item.sellingPrice * itemRow.qty;
   }, 0);
 
-  const handleCreatePack = (e) => {
+  const handleCreateOrUpdatePack = async (e) => {
     e.preventDefault();
     if (!packName.trim() || selectedItems.length === 0) {
       alert("Please provide a pack name and select at least one item.");
       return;
     }
 
-    const newPack = {
-      id: `pack-${Date.now()}`,
+    const payload = {
       name: packName.trim(),
       description: packDescription.trim() || 'Custom inventory bundle pack.',
       icon: selectedIcon,
-      status: 'In Stock',
       items: selectedItems.map(row => ({
-        name: row.item.name,
+        inventory_item_id: row.item.id,
         qty: row.qty
       }))
     };
 
-    addPack(newPack);
-    triggerToast(`Pack "${newPack.name}" created successfully!`);
+    try {
+      if (editingPackId) {
+        await updatePack(editingPackId, payload);
+        triggerToast(`Pack "${payload.name}" updated successfully!`);
+      } else {
+        await addPack(payload);
+        triggerToast(`Pack "${payload.name}" created successfully!`);
+      }
+      
+      // Reset draft fields
+      setPackName('');
+      setPackDescription('');
+      setSelectedIcon('clean_hands');
+      setSelectedItems([]);
+      setEditingPackId(null);
+      setShowModal(false);
+    } catch (err) {
+      alert(err.message);
+    }
+  };
+
+  const handleEditClick = (pack) => {
+    setEditingPackId(pack.id);
+    setPackName(pack.name);
+    setPackDescription(pack.description);
+    setSelectedIcon(pack.icon || 'clean_hands');
     
-    // Reset draft fields
-    setPackName('');
-    setPackDescription('');
-    setSelectedIcon('clean_hands');
-    setSelectedItems([]);
-    setShowModal(false);
+    // Map existing items to selectedItems structure
+    const mappedItems = pack.items.map(packItem => {
+      const match = inventoryItems.find(inv => inv.name.toLowerCase() === packItem.name.toLowerCase());
+      // In a robust system, backend should return the ID, which it now does as inventory_item_id
+      const actualItem = match || { id: packItem.inventory_item_id, name: packItem.name, sellingPrice: 0, sku: 'N/A' };
+      return { item: actualItem, qty: packItem.qty };
+    });
+    setSelectedItems(mappedItems);
+    setShowModal(true);
+  };
+
+  const handleDeleteConfirm = async () => {
+    if (!packToDelete) return;
+    try {
+      await deletePack(packToDelete.id);
+      triggerToast(`Pack "${packToDelete.name}" deleted successfully.`);
+      setPackToDelete(null);
+    } catch (err) {
+      alert(err.message);
+    }
   };
 
   // Filter items in modal search
@@ -130,7 +168,14 @@ const BundlesManagement = () => {
         </div>
         <div className="flex gap-2 w-full sm:w-auto">
           <button 
-            onClick={() => setShowModal(true)}
+            onClick={() => {
+              setEditingPackId(null);
+              setPackName('');
+              setPackDescription('');
+              setSelectedIcon('clean_hands');
+              setSelectedItems([]);
+              setShowModal(true);
+            }}
             className="w-full sm:w-auto bg-primary text-white text-label-md px-6 py-3 rounded-xl flex items-center justify-center gap-2 shadow-lg hover:shadow-primary/20 hover:scale-[1.02] active:scale-[0.98] transition-all"
           >
             <span className="material-symbols-outlined">inventory_2</span>
@@ -208,6 +253,20 @@ const BundlesManagement = () => {
                 <span className="material-symbols-outlined text-lg">receipt_long</span>
                 Add to Bill
               </button>
+              <button 
+                onClick={() => handleEditClick(pack)}
+                className="w-12 h-12 flex items-center justify-center rounded-xl bg-white/40 dark:bg-white/10 hover:bg-white/60 dark:hover:bg-white/20 transition-colors text-on-surface"
+                title="Edit Bundle"
+              >
+                <span className="material-symbols-outlined">edit</span>
+              </button>
+              <button 
+                onClick={() => setPackToDelete(pack)}
+                className="w-12 h-12 flex items-center justify-center rounded-xl bg-error/10 hover:bg-error/20 text-error transition-colors"
+                title="Delete Bundle"
+              >
+                <span className="material-symbols-outlined">delete</span>
+              </button>
             </div>
           </div>
         ))}
@@ -221,7 +280,7 @@ const BundlesManagement = () => {
             {/* Modal Header */}
             <div className="p-8 border-b border-white/40 flex justify-between items-center bg-white/20">
               <div>
-                <h3 className="font-headline-lg text-headline-lg text-primary font-bold">Create New Pack</h3>
+                <h3 className="font-headline-lg text-headline-lg text-primary font-bold">{editingPackId ? 'Edit Pack' : 'Create New Pack'}</h3>
                 <p className="text-on-surface-variant text-label-sm">Select inventory items and define quantities.</p>
               </div>
               <button 
@@ -380,10 +439,41 @@ const BundlesManagement = () => {
                 Discard Draft
               </button>
               <button 
-                onClick={handleCreatePack}
+                onClick={handleCreateOrUpdatePack}
                 className="bg-primary text-white px-10 py-3 rounded-xl font-bold font-label-md text-label-md shadow-lg hover:shadow-primary/20 active:scale-95 transition-all"
               >
-                Create Pack
+                {editingPackId ? 'Save Changes' : 'Create Pack'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Delete Confirmation Modal */}
+      {packToDelete && (
+        <div className="fixed inset-0 z-[70] flex items-center justify-center p-container-padding-mobile">
+          <div className="absolute inset-0 bg-on-background/25 backdrop-blur-md" onClick={() => setPackToDelete(null)}></div>
+          <div className="glass-panel-high w-full max-w-md rounded-3xl overflow-hidden relative flex flex-col animate-[zoomIn_0.2s_ease-out]">
+            <div className="p-6 border-b border-white/60 dark:border-white/10 flex items-center gap-3 bg-error/10">
+              <span className="material-symbols-outlined text-error">warning</span>
+              <h2 className="text-headline-sm font-bold text-error">Confirm Deletion</h2>
+            </div>
+            <div className="p-6">
+              <p className="text-body-md text-on-surface">Are you sure you want to delete bundle "<span className="font-bold">{packToDelete.name}</span>"?</p>
+              <p className="text-label-sm text-on-surface-variant mt-2">This action cannot be undone.</p>
+            </div>
+            <div className="p-6 bg-white/10 border-t border-white/60 dark:border-white/10 flex justify-end gap-3">
+              <button 
+                onClick={() => setPackToDelete(null)}
+                className="px-6 py-2 text-on-surface-variant font-bold hover:bg-white/40 dark:hover:bg-white/10 rounded-xl transition-all"
+              >
+                Cancel
+              </button>
+              <button 
+                onClick={handleDeleteConfirm}
+                className="px-6 py-2 bg-error text-white font-bold rounded-xl shadow-lg hover:shadow-error/30 hover:translate-y-[-2px] active:translate-y-[1px] transition-all"
+              >
+                Delete
               </button>
             </div>
           </div>

@@ -11,7 +11,9 @@ const SalesBillingTerminal = ({ setCurrentView }) => {
     removeFromCart, 
     clearCart, 
     addInvoice, 
-    updateInventoryItem 
+    updateInventoryItem,
+    packs,
+    addPackToCart
   } = useContext(InventoryContext);
 
   const [searchQuery, setSearchQuery] = useState('');
@@ -19,11 +21,15 @@ const SalesBillingTerminal = ({ setCurrentView }) => {
   const [toastMessage, setToastMessage] = useState('');
   const [customerName, setCustomerName] = useState('');
   const [customerEmail, setCustomerEmail] = useState('');
+  const [taxPercentage, setTaxPercentage] = useState(0);
   const [showInvoiceModal, setShowInvoiceModal] = useState(false);
   const [lastInvoice, setLastInvoice] = useState(null);
 
-  // Filter items based on search and category
-  const filteredItems = inventoryItems.filter(item => {
+  // Filter items and bundles based on search and category
+  const filteredItems = [
+    ...inventoryItems.map(item => ({ ...item, isBundle: false })),
+    ...packs.map(pack => ({ ...pack, isBundle: true, category: 'Bundles', sellingPrice: 0 }))
+  ].filter(item => {
     const matchesSearch = 
       item.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
       (item.sku && item.sku.toLowerCase().includes(searchQuery.toLowerCase())) ||
@@ -34,7 +40,7 @@ const SalesBillingTerminal = ({ setCurrentView }) => {
   });
 
   const subtotal = cart.reduce((acc, item) => acc + item.sellingPrice * item.qty, 0);
-  const tax = subtotal * 0.08;
+  const tax = subtotal * (taxPercentage / 100);
   const grandTotal = subtotal + tax;
 
   const triggerToast = (message) => {
@@ -67,7 +73,13 @@ const SalesBillingTerminal = ({ setCurrentView }) => {
         customerName: customerName.trim() || 'Walk-in Customer',
         customerEmail: customerEmail.trim() || 'customer@stockglass.com',
         issuedDate: new Date().toISOString().split('T')[0],
-        status: 'Paid',
+        status: 'PAID',
+        paymentMethod: 'CASH',
+        notes: '',
+        totalQuantity: cart.reduce((acc, item) => acc + item.qty, 0),
+        taxPercentage: taxPercentage,
+        taxAmount: tax,
+        subtotal: subtotal,
         amount: grandTotal,
         items: cart.map(i => ({ name: i.name, qty: i.qty, price: i.sellingPrice }))
       };
@@ -130,6 +142,7 @@ const SalesBillingTerminal = ({ setCurrentView }) => {
               className="bg-white/30 dark:bg-white/5 border-none rounded-lg text-label-md focus:ring-primary cursor-pointer text-on-surface py-2 pr-8 pl-3"
             >
               <option value="All">All Categories</option>
+              <option value="Bundles">Bundles</option>
               {categories.map(cat => (
                 <option key={cat.id} value={cat.name}>{cat.name}</option>
               ))}
@@ -164,13 +177,27 @@ const SalesBillingTerminal = ({ setCurrentView }) => {
                 return (
                   <div 
                     key={item.id}
-                    onClick={() => { if (!isOutOfStock) addToCart(item, 1); }}
+                    onClick={() => { 
+                      if (!isOutOfStock) {
+                        if (item.isBundle) {
+                          addPackToCart(item);
+                        } else {
+                          addToCart(item, 1); 
+                        }
+                      }
+                    }}
                     className={`glass-panel p-4 rounded-xl flex flex-col gap-3 group cursor-pointer hover:scale-[1.02] active:scale-[0.98] transition-all ${
                       isOutOfStock ? 'opacity-50 cursor-not-allowed' : ''
                     }`}
                   >
                     <div className="aspect-square rounded-lg overflow-hidden relative bg-surface-container">
-                      {item.image ? (
+                      {item.isBundle ? (
+                        <div className="w-full h-full flex items-center justify-center bg-primary/10 text-primary">
+                          <span className="material-symbols-outlined text-5xl" style={{ fontVariationSettings: "'FILL' 1" }}>
+                            {item.icon || 'package_2'}
+                          </span>
+                        </div>
+                      ) : item.image ? (
                         <img 
                           src={item.image} 
                           alt={item.name} 
@@ -189,9 +216,9 @@ const SalesBillingTerminal = ({ setCurrentView }) => {
                             ? 'bg-primary-container/20 text-on-primary-fixed-variant' 
                             : 'bg-green-500/20 text-green-700'
                       }`}>
-                        {item.quantity === 0 
+                        {item.isBundle ? 'Bundle' : (item.quantity === 0 
                           ? 'Out of stock' 
-                          : `${remainingStock} remaining`}
+                          : `${remainingStock} remaining`)}
                       </span>
                     </div>
 
@@ -199,11 +226,11 @@ const SalesBillingTerminal = ({ setCurrentView }) => {
                       <div>
                         <h3 className="font-bold text-label-md text-on-surface line-clamp-1">{item.name}</h3>
                         <p className="text-[11px] text-on-surface-variant font-mono">
-                          {item.batchNumber ? `Batch: ${item.batchNumber}` : `SKU: ${item.sku}`}
+                          {item.isBundle ? `Bundle (${item.items?.length || 0} items)` : (item.batchNumber ? `Batch: ${item.batchNumber}` : `SKU: ${item.sku}`)}
                         </p>
                       </div>
                       <div className="mt-2 flex justify-between items-end">
-                        <span className="font-bold text-primary text-label-md">${item.sellingPrice.toFixed(2)}</span>
+                        <span className="font-bold text-primary text-label-md">{item.isBundle ? 'Included Items' : `$${item.sellingPrice.toFixed(2)}`}</span>
                         {!isOutOfStock && (
                           <span className="material-symbols-outlined text-primary-container opacity-0 group-hover:opacity-100 transition-opacity">
                             add_circle
@@ -310,8 +337,19 @@ const SalesBillingTerminal = ({ setCurrentView }) => {
                 <span>Subtotal</span>
                 <span>${subtotal.toFixed(2)}</span>
               </div>
+              <div className="flex justify-between items-center text-on-surface-variant text-label-md">
+                <span>Tax Percentage (%)</span>
+                <input 
+                  type="number" 
+                  min="0" 
+                  max="100" 
+                  value={taxPercentage}
+                  onChange={(e) => setTaxPercentage(parseFloat(e.target.value) || 0)}
+                  className="w-20 bg-white/20 border-b border-white/40 focus:border-primary focus:ring-0 rounded p-1 text-right outline-none"
+                />
+              </div>
               <div className="flex justify-between text-on-surface-variant text-label-md">
-                <span>Tax (8%)</span>
+                <span>Tax Amount</span>
                 <span>${tax.toFixed(2)}</span>
               </div>
               <div className="flex justify-between items-center pt-2 border-t border-white/40">
@@ -382,8 +420,19 @@ const SalesBillingTerminal = ({ setCurrentView }) => {
                   ))}
                 </div>
               </div>
+              
+              <div className="border-t border-white/20 pt-4 mt-4 text-label-sm space-y-1">
+                <div className="flex justify-between text-on-surface-variant">
+                  <span>Subtotal:</span>
+                  <span>${lastInvoice.subtotal?.toFixed(2) || (lastInvoice.amount - (lastInvoice.taxAmount || 0)).toFixed(2)}</span>
+                </div>
+                <div className="flex justify-between text-on-surface-variant">
+                  <span>Tax ({lastInvoice.taxPercentage}%):</span>
+                  <span>${lastInvoice.taxAmount?.toFixed(2) || '0.00'}</span>
+                </div>
+              </div>
 
-              <div className="border-t border-white/40 pt-4 flex justify-between items-baseline">
+              <div className="border-t border-white/40 pt-4 flex justify-between items-baseline mt-2">
                 <span className="font-bold text-label-md text-on-surface">Total Paid:</span>
                 <span className="font-display-lg text-primary text-xl font-bold">${lastInvoice.amount.toFixed(2)}</span>
               </div>

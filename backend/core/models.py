@@ -56,3 +56,64 @@ class Notification(models.Model):
 
     def __str__(self):
         return f"{self.type} - {self.inventory_item.item_name}"
+
+class Bundle(models.Model):
+    name = models.CharField(max_length=150, unique=True)
+    description = models.TextField(blank=True, null=True)
+    icon = models.CharField(max_length=50, default='package_2')
+    created_date = models.DateTimeField(auto_now_add=True)
+    last_updated = models.DateTimeField(auto_now=True)
+
+    def __str__(self):
+        return self.name
+
+class BundleItem(models.Model):
+    bundle = models.ForeignKey(Bundle, on_delete=models.CASCADE, related_name='items')
+    inventory_item = models.ForeignKey(InventoryItem, on_delete=models.RESTRICT, related_name='bundle_occurrences')
+    quantity = models.IntegerField(validators=[MinValueValidator(1)])
+
+    class Meta:
+        unique_together = ('bundle', 'inventory_item')
+
+    def __str__(self):
+        return f"{self.quantity}x {self.inventory_item.item_name} in {self.bundle.name}"
+
+class Sale(models.Model):
+    PAYMENT_STATUS_CHOICES = [
+        ('PENDING', 'Pending'),
+        ('PAID', 'Paid'),
+        ('CANCELLED', 'Cancelled'),
+    ]
+    PAYMENT_METHOD_CHOICES = [
+        ('CASH', 'Cash'),
+        ('CREDIT_CARD', 'Credit Card'),
+        ('DEBIT_CARD', 'Debit Card'),
+        ('BANK_TRANSFER', 'Bank Transfer'),
+        ('OTHER', 'Other'),
+    ]
+
+    invoice_number = models.CharField(max_length=50, unique=True)
+    customer_name = models.CharField(max_length=150, blank=True, null=True)
+    customer_email = models.EmailField(blank=True, null=True)
+    total_quantity = models.IntegerField(default=0, validators=[MinValueValidator(0)])
+    tax_percentage = models.DecimalField(max_digits=5, decimal_places=2, default=0.00, validators=[MinValueValidator(Decimal('0.00'))])
+    tax_amount = models.DecimalField(max_digits=10, decimal_places=2, default=0.00)
+    subtotal = models.DecimalField(max_digits=10, decimal_places=2)
+    grand_total = models.DecimalField(max_digits=10, decimal_places=2)
+    payment_status = models.CharField(max_length=20, choices=PAYMENT_STATUS_CHOICES, default='PAID')
+    payment_method = models.CharField(max_length=20, choices=PAYMENT_METHOD_CHOICES, default='CASH')
+    notes = models.TextField(blank=True, null=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    def __str__(self):
+        return self.invoice_number
+
+class SaleItem(models.Model):
+    sale = models.ForeignKey(Sale, on_delete=models.CASCADE, related_name='items')
+    item_name = models.CharField(max_length=150)
+    quantity = models.IntegerField(validators=[MinValueValidator(1)])
+    price = models.DecimalField(max_digits=10, decimal_places=2)
+
+    def __str__(self):
+        return f"{self.quantity}x {self.item_name} in {self.sale.invoice_number}"
