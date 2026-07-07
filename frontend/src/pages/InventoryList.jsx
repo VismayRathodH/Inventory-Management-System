@@ -2,13 +2,13 @@ import React, { useContext, useState, useEffect } from 'react';
 import { InventoryContext } from '../context/InventoryContext';
 
 const InventoryList = ({ setCurrentView }) => {
-  const { inventoryItems, categories, addInventoryItem, updateInventoryItem, deleteInventoryItem } = useContext(InventoryContext);
+  const { inventoryItems, categories, addInventoryItem, updateInventoryItem, deleteInventoryItem, triggerAlert } = useContext(InventoryContext);
 
   // Filter and view states
   const [searchQuery, setSearchQuery] = useState('');
   const [activeTab, setActiveTab] = useState('All'); // All, Critical, Archived
   const [selectedCategory, setSelectedCategory] = useState('All');
-  const [sortBy, setSortBy] = useState('Name (A-Z)');
+  const [sortBy, setSortBy] = useState('Sort: Name (A-Z)');
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 8;
 
@@ -118,16 +118,19 @@ const InventoryList = ({ setCurrentView }) => {
 
   // 3. Apply Sorting
   filteredItems.sort((a, b) => {
-    if (sortBy === 'Name (A-Z)') {
+    if (sortBy === 'Sort: Name (A-Z)') {
       return a.name.localeCompare(b.name);
     }
-    if (sortBy === 'Qty (High-Low)') {
+    if (sortBy === 'Sort: Qty (High-Low)') {
       return b.quantity - a.quantity;
     }
-    if (sortBy === 'Price') {
+    if (sortBy === 'Sort: Price (High-Low)') {
       return b.sellingPrice - a.sellingPrice;
     }
-    if (sortBy === 'Expiry') {
+    if (sortBy === 'Sort: Price (Low-High)') {
+      return a.sellingPrice - b.sellingPrice;
+    }
+    if (sortBy === 'Sort: Expiry') {
       if (!a.expiryDate) return 1;
       if (!b.expiryDate) return -1;
       return new Date(a.expiryDate) - new Date(b.expiryDate);
@@ -271,10 +274,11 @@ const InventoryList = ({ setCurrentView }) => {
               onChange={(e) => setSortBy(e.target.value)}
               className="bg-white/30 dark:bg-white/5 border-none rounded-lg text-label-md focus:ring-primary cursor-pointer text-on-surface py-2 pr-8 pl-3"
             >
-              <option>Sort: Name (A-Z)</option>
-              <option>Sort: Qty (High-Low)</option>
-              <option>Sort: Price</option>
-              <option>Sort: Expiry</option>
+              <option value="Sort: Name (A-Z)">Sort: Name (A-Z)</option>
+              <option value="Sort: Qty (High-Low)">Sort: Qty (High-Low)</option>
+              <option value="Sort: Price (High-Low)">Sort: Price (High-Low)</option>
+              <option value="Sort: Price (Low-High)">Sort: Price (Low-High)</option>
+              <option value="Sort: Expiry">Sort: Expiry</option>
             </select>
 
             {/* Initialize Item Trigger */}
@@ -661,7 +665,7 @@ const InventoryList = ({ setCurrentView }) => {
                     await deleteInventoryItem(itemToDelete.id);
                     setItemToDelete(null);
                   } catch (err) {
-                    alert(err.message);
+                    triggerAlert(err.message, "Deletion Failed");
                   }
                 }}
                 className="px-6 py-2 bg-error text-white font-bold rounded-xl shadow-lg hover:shadow-error/30 hover:translate-y-[-2px] active:translate-y-[1px] transition-all"

@@ -23,6 +23,11 @@ export const InventoryProvider = ({ children }) => {
   }, [logs]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [globalAlert, setGlobalAlert] = useState(null);
+
+  const triggerAlert = (message, title = "Notice") => {
+    setGlobalAlert({ message, title });
+  };
 
   const fetchCategories = useCallback(async () => {
     try {
@@ -244,13 +249,13 @@ export const InventoryProvider = ({ children }) => {
       if (existing) {
         const newQty = existing.qty + qty;
         if (newQty > item.quantity) {
-          alert(`Maximum quantity validation: Stock limit reached for "${item.name}".`);
+          triggerAlert(`Maximum quantity validation: Stock limit reached for "${item.name}".`, "Validation Failed");
           return prevCart;
         }
         return prevCart.map(i => i.id === item.id ? { ...i, qty: newQty } : i);
       } else {
         if (qty > item.quantity) {
-          alert(`Maximum quantity validation: Stock limit reached for "${item.name}".`);
+          triggerAlert(`Maximum quantity validation: Stock limit reached for "${item.name}".`, "Validation Failed");
           return prevCart;
         }
         return [...prevCart, { ...item, qty }];
@@ -267,7 +272,7 @@ export const InventoryProvider = ({ children }) => {
             return null;
           }
           if (newQty > item.quantity) {
-            alert(`Quantity validation error: Exceeds available stock of ${item.quantity} for "${item.name}".`);
+            triggerAlert(`Quantity validation error: Exceeds available stock of ${item.quantity} for "${item.name}".`, "Validation Failed");
             return item;
           }
           return { ...item, qty: newQty };
@@ -386,7 +391,7 @@ export const InventoryProvider = ({ children }) => {
         const currentQty = existing ? existing.qty : 0;
         const finalQty = currentQty + packItem.qty;
         if (finalQty > match.quantity) {
-          alert(`Validation Failed: Insufficient stock for "${match.name}". Required: ${finalQty}, Available: ${match.quantity}.`);
+          triggerAlert(`Validation Failed: Insufficient stock for "${match.name}". Required: ${finalQty}, Available: ${match.quantity}.`, "Validation Failed");
           return; // Reject entire bundle
         }
       } else {
@@ -456,9 +461,34 @@ export const InventoryProvider = ({ children }) => {
       addPack,
       updatePack,
       deletePack,
-      addPackToCart
+      addPackToCart,
+      triggerAlert
     }}>
       {children}
+      
+      {/* Global Alert Modal */}
+      {globalAlert && (
+        <div className="fixed inset-0 z-[150] flex items-center justify-center p-4">
+          <div className="absolute inset-0 bg-on-background/25 backdrop-blur-md" onClick={() => setGlobalAlert(null)}></div>
+          <div className="glass-panel-high w-full max-w-sm rounded-3xl overflow-hidden relative flex flex-col animate-[zoomIn_0.2s_ease-out] bg-white/95 dark:bg-zinc-900/95 border border-white/80 shadow-2xl">
+            <div className="p-6 border-b border-white/60 dark:border-white/10 flex items-center gap-3 bg-primary/10">
+              <span className="material-symbols-outlined text-primary">info</span>
+              <h2 className="text-headline-sm font-bold text-primary">{globalAlert.title}</h2>
+            </div>
+            <div className="p-6">
+              <p className="text-body-md text-on-surface">{globalAlert.message}</p>
+            </div>
+            <div className="p-6 bg-white/10 border-t border-white/60 dark:border-white/10 flex justify-end">
+              <button 
+                onClick={() => setGlobalAlert(null)}
+                className="px-6 py-2.5 bg-primary text-white font-bold rounded-xl shadow-lg hover:shadow-primary/30 transition-all hover:scale-[1.02] active:scale-[0.98]"
+              >
+                OK
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </InventoryContext.Provider>
   );
 };

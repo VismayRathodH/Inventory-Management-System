@@ -16,7 +16,7 @@ const AdvancedAnalytics = ({ setCurrentView }) => {
 
   // Dynamic calculations based on inventoryItems and invoices
   const totalSalesCount = invoices.length;
-  const totalRevenue = invoices.reduce((sum, inv) => sum + (inv.status === 'Paid' ? inv.amount : 0), 0);
+  const totalRevenue = invoices.reduce((sum, inv) => sum + (inv.status === 'PAID' ? inv.amount : 0), 0);
   const activeSKUsCount = inventoryItems.length;
   
   // Calculate average profit (simulated as 40% of revenue)
@@ -72,7 +72,7 @@ const AdvancedAnalytics = ({ setCurrentView }) => {
 
       revenueData = dates.map(date => {
         return invoices
-          .filter(inv => inv.issuedDate === date && inv.status === 'Paid')
+          .filter(inv => inv.issuedDate === date && inv.status === 'PAID')
           .reduce((sum, inv) => sum + inv.amount, 0);
       });
 
@@ -84,7 +84,7 @@ const AdvancedAnalytics = ({ setCurrentView }) => {
 
       revenueDataPrev = datesPrev.map(date => {
         return invoices
-          .filter(inv => inv.issuedDate === date && inv.status === 'Paid')
+          .filter(inv => inv.issuedDate === date && inv.status === 'PAID')
           .reduce((sum, inv) => sum + inv.amount, 0);
       });
 
@@ -100,7 +100,7 @@ const AdvancedAnalytics = ({ setCurrentView }) => {
         return invoices
           .filter(inv => {
             const d = new Date(inv.issuedDate);
-            return d >= start && d < end && inv.status === 'Paid';
+            return d >= start && d < end && inv.status === 'PAID';
           })
           .reduce((sum, inv) => sum + inv.amount, 0);
       };
@@ -122,7 +122,7 @@ const AdvancedAnalytics = ({ setCurrentView }) => {
 
       revenueData = months.map(m => {
         return invoices
-          .filter(inv => inv.issuedDate.startsWith(m.yearMonth) && inv.status === 'Paid')
+          .filter(inv => inv.issuedDate.startsWith(m.yearMonth) && inv.status === 'PAID')
           .reduce((sum, inv) => sum + inv.amount, 0);
       });
 
@@ -130,7 +130,7 @@ const AdvancedAnalytics = ({ setCurrentView }) => {
         const [year, month] = m.yearMonth.split('-').map(Number);
         const prevYearMonth = `${year - 1}-${String(month).padStart(2, '0')}`;
         return invoices
-          .filter(inv => inv.issuedDate.startsWith(prevYearMonth) && inv.status === 'Paid')
+          .filter(inv => inv.issuedDate.startsWith(prevYearMonth) && inv.status === 'PAID')
           .reduce((sum, inv) => sum + inv.amount, 0);
       });
     }

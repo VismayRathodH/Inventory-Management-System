@@ -13,7 +13,8 @@ const SalesBillingTerminal = ({ setCurrentView }) => {
     addInvoice, 
     updateInventoryItem,
     packs,
-    addPackToCart
+    addPackToCart,
+    triggerAlert
   } = useContext(InventoryContext);
 
   const [searchQuery, setSearchQuery] = useState('');
@@ -95,7 +96,7 @@ const SalesBillingTerminal = ({ setCurrentView }) => {
       setCustomerName('');
       setCustomerEmail('');
     } catch (err) {
-      alert(`Error finalizing order: ${err.message}`);
+      triggerAlert(`Error finalizing order: ${err.message}`, "Order Failed");
     }
   };
 
@@ -441,7 +442,7 @@ const SalesBillingTerminal = ({ setCurrentView }) => {
             <div className="mt-6 flex justify-end gap-3">
               <button 
                 onClick={() => {
-                  alert(`Receipt ${lastInvoice.id} sent to print spool.`);
+                  triggerAlert(`Receipt ${lastInvoice.id} sent to print spool.`, "Print Spool");
                   setShowInvoiceModal(false);
                 }}
                 className="px-5 py-2.5 rounded-xl border border-white/60 hover:bg-white/40 dark:hover:bg-white/10 text-on-surface font-semibold text-label-sm flex items-center gap-1.5 transition-colors"

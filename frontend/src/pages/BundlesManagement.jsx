@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { InventoryContext } from '../context/InventoryContext';
 
 const BundlesManagement = () => {
-  const { packs, inventoryItems, addPack, updatePack, deletePack, addPackToCart } = useContext(InventoryContext);
+  const { packs, inventoryItems, addPack, updatePack, deletePack, addPackToCart, triggerAlert } = useContext(InventoryContext);
   const navigate = useNavigate();
 
   const totalAvailablePacks = packs.filter(p => p.status === 'In Stock').length;
@@ -74,7 +74,7 @@ const BundlesManagement = () => {
   const handleCreateOrUpdatePack = async (e) => {
     e.preventDefault();
     if (!packName.trim() || selectedItems.length === 0) {
-      alert("Please provide a pack name and select at least one item.");
+      triggerAlert("Please provide a pack name and select at least one item.", "Validation Error");
       return;
     }
 
@@ -105,7 +105,7 @@ const BundlesManagement = () => {
       setEditingPackId(null);
       setShowModal(false);
     } catch (err) {
-      alert(err.message);
+      triggerAlert(err.message, "Error");
     }
   };
 
@@ -133,7 +133,7 @@ const BundlesManagement = () => {
       triggerToast(`Pack "${packToDelete.name}" deleted successfully.`);
       setPackToDelete(null);
     } catch (err) {
-      alert(err.message);
+      triggerAlert(err.message, "Deletion Failed");
     }
   };
 

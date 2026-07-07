@@ -2,7 +2,7 @@ import React, { useContext, useState } from 'react';
 import { InventoryContext } from '../context/InventoryContext';
 
 const InvoiceHistoryExport = ({ setCurrentView }) => {
-  const { invoices } = useContext(InventoryContext);
+  const { invoices, triggerAlert } = useContext(InventoryContext);
 
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState('All'); // All, Paid, Pending, Overdue
@@ -52,14 +52,14 @@ const InvoiceHistoryExport = ({ setCurrentView }) => {
 
   // Dynamic stats
   const totalReceivables = invoices
-    .filter(i => i.status === 'Paid')
+    .filter(i => i.status === 'PAID')
     .reduce((acc, curr) => acc + curr.amount, 0);
 
-  const pendingCount = invoices.filter(i => i.status === 'Pending').length;
+  const pendingCount = invoices.filter(i => i.status === 'PENDING').length;
 
   const handleExportCsv = () => {
-    if (invoices.length === 0) {
-      alert("No invoice records to export.");
+    if (filteredInvoices.length === 0) {
+      triggerAlert("No invoice records to export.", "Export Failed");
       return;
     }
 
@@ -167,9 +167,9 @@ const InvoiceHistoryExport = ({ setCurrentView }) => {
             className="bg-white/30 dark:bg-white/5 border-none rounded-lg text-label-md focus:ring-primary cursor-pointer text-on-surface py-2 pr-8 pl-3"
           >
             <option value="All">All Statuses</option>
-            <option value="Paid">Paid</option>
-            <option value="Pending">Pending</option>
-            <option value="Overdue">Overdue</option>
+            <option value="PAID">Paid</option>
+            <option value="PENDING">Pending</option>
+            <option value="CANCELLED">Cancelled</option>
           </select>
 
           {/* Sort order filter */}
@@ -227,9 +227,9 @@ const InvoiceHistoryExport = ({ setCurrentView }) => {
                     <td className="p-6 text-on-surface-variant font-mono">{inv.issuedDate}</td>
                     <td className="p-6">
                       <span className={`px-3 py-1 rounded-full text-label-sm font-semibold border ${
-                        inv.status === 'Paid'
+                        inv.status === 'PAID'
                           ? 'bg-green-500/10 text-green-700 border-green-500/20'
-                          : inv.status === 'Pending'
+                          : inv.status === 'PENDING'
                             ? 'bg-primary-container/10 text-primary-container border-primary-container/20'
                             : 'bg-error/10 text-error border-error/20'
                       }`}>
@@ -240,11 +240,11 @@ const InvoiceHistoryExport = ({ setCurrentView }) => {
                     <td className="p-6 text-right">
                       <div className="flex justify-end gap-2">
                         <button 
-                          onClick={() => {
-                            triggerToast(`Sending print command for #${inv.id}...`);
-                            alert(`Sent print spool command for Invoice #${inv.id}`);
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            triggerAlert(`Sent print spool command for Invoice #${inv.id}`, "Print Spool");
                           }}
-                          className="p-2 hover:bg-white/30 dark:hover:bg-white/10 rounded-lg text-on-surface-variant hover:text-primary transition-all"
+                          className="p-2 hover:bg-white/10 dark:hover:bg-white/5 rounded-lg text-on-surface-variant transition-colors"
                           title="Print Receipt"
                         >
                           <span className="material-symbols-outlined text-sm">print</span>
@@ -336,9 +336,9 @@ const InvoiceHistoryExport = ({ setCurrentView }) => {
               <div className="flex justify-between text-label-md">
                 <span className="text-on-surface-variant">Status:</span>
                 <span className={`px-2.5 py-0.5 rounded-full text-xs font-semibold ${
-                  selectedInvoice.status === 'Paid'
+                  selectedInvoice.status === 'PAID'
                     ? 'bg-green-100 text-green-700'
-                    : selectedInvoice.status === 'Pending'
+                    : selectedInvoice.status === 'PENDING'
                       ? 'bg-orange-100 text-orange-700'
                       : 'bg-red-100 text-red-700'
                 }`}>{selectedInvoice.status}</span>
@@ -371,7 +371,7 @@ const InvoiceHistoryExport = ({ setCurrentView }) => {
             <div className="mt-6 flex justify-end gap-3">
               <button 
                 onClick={() => {
-                  alert(`Receipt sent to print spool.`);
+                  triggerAlert(`Receipt sent to print spool.`, "Print Spool");
                   setSelectedInvoice(null);
                 }}
                 className="px-5 py-2.5 rounded-xl border border-white/60 hover:bg-white/40 dark:hover:bg-white/10 text-on-surface font-semibold text-label-sm flex items-center gap-1.5 transition-colors"
