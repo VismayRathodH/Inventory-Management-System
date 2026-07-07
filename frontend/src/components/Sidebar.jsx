@@ -1,16 +1,20 @@
 import React from 'react';
 
-const Sidebar = ({ currentView, setCurrentView, mobileOpen, setMobileOpen, handleLogout }) => {
-  const menuItems = [
-    { id: 'dashboard', label: 'Dashboard', icon: 'dashboard' },
-    { id: 'categories', label: 'Categories', icon: 'category' },
-    { id: 'inventory', label: 'Inventory', icon: 'inventory_2' },
-    { id: 'notifications', label: 'Notifications', icon: 'notifications' },
-    { id: 'sales', label: 'Sales', icon: 'shopping_cart' },
-    { id: 'bundles', label: 'Bundles', icon: 'package_2' },
-    { id: 'analytics', label: 'Analytics', icon: 'leaderboard' },
-    { id: 'export', label: 'Export', icon: 'ios_share' }
+const Sidebar = ({ currentView, setCurrentView, mobileOpen, setMobileOpen, handleLogout, role }) => {
+  const rawMenuItems = [
+    { id: 'dashboard', label: 'Dashboard', icon: 'dashboard', allowedRoles: ['admin'] },
+    { id: 'categories', label: 'Categories', icon: 'category', allowedRoles: ['admin'] },
+    { id: 'inventory', label: 'Inventory', icon: 'inventory_2', allowedRoles: ['admin'] },
+    { id: 'notifications', label: 'Notifications', icon: 'notifications', allowedRoles: ['admin'] },
+    { id: 'sales', label: 'Sales', icon: 'shopping_cart', allowedRoles: ['admin', 'worker'] },
+    { id: 'bundles', label: 'Bundles', icon: 'package_2', allowedRoles: ['admin', 'worker'] },
+    { id: 'analytics', label: 'Analytics', icon: 'leaderboard', allowedRoles: ['admin'] },
+    { id: 'export', label: 'Export', icon: 'ios_share', allowedRoles: ['admin'] },
+    { id: 'admin_profile', label: 'Admin Profile', icon: 'admin_panel_settings', allowedRoles: ['admin'] },
+    { id: 'worker_dashboard', label: 'Worker Dashboard', icon: 'engineering', allowedRoles: ['worker'] }
   ];
+
+  const menuItems = rawMenuItems.filter(item => item.allowedRoles.includes(role || 'admin'));
 
   const handleNavClick = (viewId) => {
     setCurrentView(viewId);
@@ -30,7 +34,7 @@ const Sidebar = ({ currentView, setCurrentView, mobileOpen, setMobileOpen, handl
       </div>
 
       {/* Navigation Links */}
-      <div className="flex-1 flex flex-col gap-2">
+      <div className="flex-1 flex flex-col gap-2 overflow-y-auto custom-scrollbar pr-1">
         {menuItems.map((item) => {
           const isActive = currentView === item.id || 
             (item.id === 'categories' && currentView === 'add_category') ||
@@ -54,13 +58,15 @@ const Sidebar = ({ currentView, setCurrentView, mobileOpen, setMobileOpen, handl
 
       {/* Add Item Bottom Trigger */}
       <div className="mt-auto p-4 border-t border-white/30 flex flex-col gap-2">
-        <button 
-          onClick={() => handleNavClick('add_item')}
-          className="w-full bg-primary-container text-white dark:text-on-primary-container font-label-md text-label-md py-3 rounded-lg shadow-md hover:bg-primary transition-colors flex items-center justify-center gap-2 hover:scale-[1.02] active:scale-[0.98]"
-        >
-          <span className="material-symbols-outlined">add</span>
-          Add Item
-        </button>
+        {role !== 'worker' && (
+          <button 
+            onClick={() => handleNavClick('add_item')}
+            className="w-full bg-primary-container text-white dark:text-on-primary-container font-label-md text-label-md py-3 rounded-lg shadow-md hover:bg-primary transition-colors flex items-center justify-center gap-2 hover:scale-[1.02] active:scale-[0.98]"
+          >
+            <span className="material-symbols-outlined">add</span>
+            Add Item
+          </button>
+        )}
         <button 
           onClick={handleLogout}
           className="w-full text-error font-label-md text-label-md py-2 rounded-lg hover:bg-error-container/20 transition-colors flex items-center justify-center gap-2"

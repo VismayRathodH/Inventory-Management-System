@@ -24,7 +24,11 @@ const Navbar = ({ currentView, setCurrentView, mobileOpen, setMobileOpen }) => {
         
         {/* User Profile Avatar */}
         <div className="h-8 w-px bg-white/60 dark:bg-white/10 hidden sm:block"></div>
-        <div className="w-8 h-8 rounded-full overflow-hidden border border-white/60 dark:border-white/20 shadow-sm cursor-pointer hover:ring-2 hover:ring-primary/50 transition-all">
+        <div 
+          onClick={() => setCurrentView('admin_profile')}
+          title="View Admin Profile"
+          className="w-8 h-8 rounded-full overflow-hidden border border-white/60 dark:border-white/20 shadow-sm cursor-pointer hover:ring-2 hover:ring-primary/50 transition-all"
+        >
           <img 
             alt="User avatar" 
             className="w-full h-full object-cover" 

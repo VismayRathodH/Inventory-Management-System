@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import Sidebar from './Sidebar';
 import Navbar from './Navbar';
 
-const AppLayout = ({ currentView, setCurrentView, handleLogout, children }) => {
+const AppLayout = ({ currentView, setCurrentView, handleLogout, role, children }) => {
   const [mobileOpen, setMobileOpen] = useState(false);
 
   return (
@@ -20,6 +20,7 @@ const AppLayout = ({ currentView, setCurrentView, handleLogout, children }) => {
         mobileOpen={mobileOpen}
         setMobileOpen={setMobileOpen}
         handleLogout={handleLogout}
+        role={role}
       />
 
       {/* Main Content Area */}
@@ -31,6 +32,7 @@ const AppLayout = ({ currentView, setCurrentView, handleLogout, children }) => {
           setCurrentView={setCurrentView}
           mobileOpen={mobileOpen}
           setMobileOpen={setMobileOpen}
+          role={role}
         />
 
         {/* Content Canvas */}
