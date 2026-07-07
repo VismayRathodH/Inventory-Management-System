@@ -140,6 +140,40 @@ export const InventoryProvider = ({ children }) => {
     refreshAll();
   }, [refreshAll]);
 
+  const groupInventoryItemsByName = useCallback((items) => {
+    const groups = {};
+    items.forEach(item => {
+      const name = item.name.toLowerCase();
+      if (!groups[name]) {
+        groups[name] = {
+          id: `grouped-${name.replace(/\s+/g, '-')}`, // Pseudo-id
+          name: item.name,
+          category: item.category,
+          categoryId: item.categoryId,
+          sellingPrice: item.sellingPrice,
+          image: item.image,
+          quantity: 0,
+          threshold: item.threshold,
+          sku: item.sku, // representative sku
+          batches: []
+        };
+      }
+      groups[name].quantity += item.quantity;
+      groups[name].batches.push(item);
+    });
+
+    // Sort batches by FEFO inside each group
+    Object.values(groups).forEach(group => {
+      group.batches.sort((a, b) => {
+        if (!a.expiryDate) return 1;
+        if (!b.expiryDate) return -1;
+        return new Date(a.expiryDate) - new Date(b.expiryDate);
+      });
+    });
+
+    return Object.values(groups);
+  }, []);
+
   // CRUD for Categories
   const addCategory = async (name, description) => {
     try {
@@ -383,15 +417,17 @@ export const InventoryProvider = ({ children }) => {
   };
 
   const addPackToCart = (pack, navigate) => {
+    const groupedItems = groupInventoryItemsByName(inventoryItems);
+
     // 1. Validation pass: verify all items have sufficient stock
     for (const packItem of pack.items) {
-      const match = inventoryItems.find(invItem => invItem.id === packItem.inventory_item_id || invItem.name.toLowerCase() === packItem.name.toLowerCase());
-      if (match) {
-        const existing = cart.find(i => i.id === match.id);
+      const groupedMatch = groupedItems.find(g => g.name.toLowerCase() === packItem.name.toLowerCase());
+      if (groupedMatch) {
+        const existing = cart.find(i => i.name.toLowerCase() === packItem.name.toLowerCase());
         const currentQty = existing ? existing.qty : 0;
         const finalQty = currentQty + packItem.qty;
-        if (finalQty > match.quantity) {
-          triggerAlert(`Validation Failed: Insufficient stock for "${match.name}". Required: ${finalQty}, Available: ${match.quantity}.`, "Validation Failed");
+        if (finalQty > groupedMatch.quantity) {
+          triggerAlert(`Validation Failed: Insufficient stock for "${groupedMatch.name}". Required: ${finalQty}, Available: ${groupedMatch.quantity}.`, "Validation Failed");
           return; // Reject entire bundle
         }
       } else {
@@ -402,16 +438,16 @@ export const InventoryProvider = ({ children }) => {
     // 2. Execution pass: all items valid, add them
     let addedAny = false;
     pack.items.forEach(packItem => {
-      const match = inventoryItems.find(invItem => invItem.id === packItem.inventory_item_id || invItem.name.toLowerCase() === packItem.name.toLowerCase());
-      if (match) {
+      const groupedMatch = groupedItems.find(g => g.name.toLowerCase() === packItem.name.toLowerCase());
+      if (groupedMatch) {
         setCart(prevCart => {
-          const existing = prevCart.find(i => i.id === match.id);
+          const existing = prevCart.find(i => i.name.toLowerCase() === groupedMatch.name.toLowerCase());
           const currentQty = existing ? existing.qty : 0;
           const finalQty = currentQty + packItem.qty;
           if (existing) {
-            return prevCart.map(i => i.id === match.id ? { ...i, qty: finalQty } : i);
+            return prevCart.map(i => i.name.toLowerCase() === groupedMatch.name.toLowerCase() ? { ...i, qty: finalQty } : i);
           } else {
-            return [...prevCart, { ...match, qty: packItem.qty }];
+            return [...prevCart, { ...groupedMatch, qty: packItem.qty }];
           }
         });
         addedAny = true;
@@ -462,7 +498,8 @@ export const InventoryProvider = ({ children }) => {
       updatePack,
       deletePack,
       addPackToCart,
-      triggerAlert
+      triggerAlert,
+      groupInventoryItemsByName
     }}>
       {children}
       

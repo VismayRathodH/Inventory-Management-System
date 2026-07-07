@@ -63,7 +63,28 @@ class InventoryItemViewSet(viewsets.ModelViewSet):
         serializer.save()
 
     def perform_update(self, serializer):
-        serializer.save()
+        instance = serializer.save()
+        if instance.quantity <= 0:
+            # Try to reassign bundle occurrences to another batch of the same item
+            other_batch = InventoryItem.objects.filter(item_name=instance.item_name).exclude(id=instance.id).first()
+            for bundle_item in instance.bundle_occurrences.all():
+                if other_batch:
+                    bundle_item.inventory_item = other_batch
+                    bundle_item.save()
+                else:
+                    bundle_item.delete()
+            instance.delete()
+
+    def perform_destroy(self, instance):
+        # Try to reassign bundle occurrences to another batch of the same item
+        other_batch = InventoryItem.objects.filter(item_name=instance.item_name).exclude(id=instance.id).first()
+        for bundle_item in instance.bundle_occurrences.all():
+            if other_batch:
+                bundle_item.inventory_item = other_batch
+                bundle_item.save()
+            else:
+                bundle_item.delete()
+        instance.delete()
 
 class NotificationViewSet(viewsets.ModelViewSet):
     queryset = Notification.objects.all()

@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { InventoryContext } from '../context/InventoryContext';
 
 const BundlesManagement = () => {
-  const { packs, inventoryItems, addPack, updatePack, deletePack, addPackToCart, triggerAlert } = useContext(InventoryContext);
+  const { packs, inventoryItems, addPack, updatePack, deletePack, addPackToCart, triggerAlert, groupInventoryItemsByName } = useContext(InventoryContext);
   const navigate = useNavigate();
 
   const totalAvailablePacks = packs.filter(p => p.status === 'In Stock').length;
@@ -82,10 +82,13 @@ const BundlesManagement = () => {
       name: packName.trim(),
       description: packDescription.trim() || 'Custom inventory bundle pack.',
       icon: selectedIcon,
-      items: selectedItems.map(row => ({
-        inventory_item_id: row.item.id,
-        qty: row.qty
-      }))
+      items: selectedItems.map(row => {
+        const earliestBatchId = row.item.batches && row.item.batches.length > 0 ? row.item.batches[0].id : row.item.id;
+        return {
+          inventory_item_id: earliestBatchId,
+          qty: row.qty
+        };
+      })
     };
 
     try {
@@ -116,10 +119,11 @@ const BundlesManagement = () => {
     setSelectedIcon(pack.icon || 'clean_hands');
     
     // Map existing items to selectedItems structure
+    const groupedItems = groupInventoryItemsByName(inventoryItems);
     const mappedItems = pack.items.map(packItem => {
-      const match = inventoryItems.find(inv => inv.name.toLowerCase() === packItem.name.toLowerCase());
+      const match = groupedItems.find(inv => inv.name.toLowerCase() === packItem.name.toLowerCase());
       // In a robust system, backend should return the ID, which it now does as inventory_item_id
-      const actualItem = match || { id: packItem.inventory_item_id, name: packItem.name, sellingPrice: 0, sku: 'N/A' };
+      const actualItem = match || { id: packItem.inventory_item_id, name: packItem.name, sellingPrice: 0, sku: 'N/A', batches: [{id: packItem.inventory_item_id}] };
       return { item: actualItem, qty: packItem.qty };
     });
     setSelectedItems(mappedItems);
@@ -138,10 +142,10 @@ const BundlesManagement = () => {
   };
 
   // Filter items in modal search
-  const filteredSearchItems = inventoryItems.filter(item => {
+  const filteredSearchItems = groupInventoryItemsByName(inventoryItems).filter(item => {
     const matchesSearch = item.name.toLowerCase().includes(itemSearchQuery.toLowerCase()) ||
-                          item.sku.toLowerCase().includes(itemSearchQuery.toLowerCase());
-    const alreadySelected = selectedItems.some(i => i.item.id === item.id);
+                          (item.sku && item.sku.toLowerCase().includes(itemSearchQuery.toLowerCase()));
+    const alreadySelected = selectedItems.some(i => i.item.name.toLowerCase() === item.name.toLowerCase());
     return matchesSearch && !alreadySelected;
   });
 

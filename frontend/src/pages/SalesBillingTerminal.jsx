@@ -14,7 +14,8 @@ const SalesBillingTerminal = ({ setCurrentView }) => {
     updateInventoryItem,
     packs,
     addPackToCart,
-    triggerAlert
+    triggerAlert,
+    groupInventoryItemsByName
   } = useContext(InventoryContext);
 
   const [searchQuery, setSearchQuery] = useState('');
@@ -27,8 +28,9 @@ const SalesBillingTerminal = ({ setCurrentView }) => {
   const [lastInvoice, setLastInvoice] = useState(null);
 
   // Filter items and bundles based on search and category
+  const groupedItems = groupInventoryItemsByName(inventoryItems);
   const filteredItems = [
-    ...inventoryItems.map(item => ({ ...item, isBundle: false })),
+    ...groupedItems.map(item => ({ ...item, isBundle: false })),
     ...packs.map(pack => ({ ...pack, isBundle: true, category: 'Bundles', sellingPrice: 0 }))
   ].filter(item => {
     const matchesSearch = 
@@ -55,15 +57,28 @@ const SalesBillingTerminal = ({ setCurrentView }) => {
     if (cart.length === 0) return;
 
     try {
-      // 1. Update quantities in inventory database via updateInventoryItem context calls
+      // 1. Update quantities in inventory database via updateInventoryItem context calls (FEFO deduction)
       for (const cartItem of cart) {
-        const originalItem = inventoryItems.find(item => item.id === cartItem.id);
-        if (originalItem) {
+        const batches = inventoryItems.filter(i => i.name.toLowerCase() === cartItem.name.toLowerCase() && i.quantity > 0);
+        
+        // Sort by expiry (earliest first, no expiry at the end)
+        batches.sort((a, b) => {
+          if (!a.expiryDate) return 1;
+          if (!b.expiryDate) return -1;
+          return new Date(a.expiryDate) - new Date(b.expiryDate);
+        });
+
+        let remainingToDeduct = cartItem.qty;
+        for (const batch of batches) {
+          if (remainingToDeduct <= 0) break;
           // If virtual item, we don't have it in DB, skip PATCH
-          if (typeof originalItem.id === 'string' && originalItem.id.startsWith('virtual')) continue;
-          
-          const newQty = Math.max(0, originalItem.quantity - cartItem.qty);
-          await updateInventoryItem(originalItem.id, { quantity: newQty });
+          if (typeof batch.id === 'string' && batch.id.startsWith('virtual')) continue;
+
+          const deduct = Math.min(batch.quantity, remainingToDeduct);
+          if (deduct > 0) {
+            await updateInventoryItem(batch.id, { quantity: batch.quantity - deduct });
+            remainingToDeduct -= deduct;
+          }
         }
       }
 
@@ -227,7 +242,7 @@ const SalesBillingTerminal = ({ setCurrentView }) => {
                       <div>
                         <h3 className="font-bold text-label-md text-on-surface line-clamp-1">{item.name}</h3>
                         <p className="text-[11px] text-on-surface-variant font-mono">
-                          {item.isBundle ? `Bundle (${item.items?.length || 0} items)` : (item.batchNumber ? `Batch: ${item.batchNumber}` : `SKU: ${item.sku}`)}
+                          {item.isBundle ? `Bundle (${item.items?.length || 0} items)` : (item.batches && item.batches.length > 1 ? `Batches: ${item.batches.length}` : (item.batches && item.batches[0] && item.batches[0].batchNumber ? `Batch: ${item.batches[0].batchNumber}` : `SKU: ${item.sku}`))}
                         </p>
                       </div>
                       <div className="mt-2 flex justify-between items-end">
@@ -285,7 +300,7 @@ const SalesBillingTerminal = ({ setCurrentView }) => {
                       </span>
                     </div>
                     <p className="text-xs text-on-surface-variant">
-                      Unit: ${item.sellingPrice.toFixed(2)} • Batch: {item.batchNumber || 'N/A'}
+                      Unit: ${item.sellingPrice.toFixed(2)} • {item.batches && item.batches.length > 1 ? `Multiple Batches` : `Batch: ${(item.batches && item.batches[0] && item.batches[0].batchNumber) || 'N/A'}`}
                     </p>
                   </div>
                   <div className="flex items-center gap-2 bg-white/30 dark:bg-white/10 rounded-full px-2 py-1 select-none shrink-0 border border-white/20">
