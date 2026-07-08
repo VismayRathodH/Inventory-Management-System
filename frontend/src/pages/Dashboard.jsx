@@ -1,8 +1,9 @@
 import React, { useContext } from 'react';
 import { InventoryContext } from '../context/InventoryContext';
+import * as XLSX from 'xlsx';
 
 const Dashboard = ({ setCurrentView }) => {
-  const { inventoryItems, notifications, categories, logs } = useContext(InventoryContext);
+  const { inventoryItems, notifications, categories, logs, invoices } = useContext(InventoryContext);
 
   // Compute metrics dynamically
   const totalStockVolume = inventoryItems.reduce((sum, item) => sum + item.quantity, 0);
@@ -20,12 +21,102 @@ const Dashboard = ({ setCurrentView }) => {
   // Recent inventory items (limit to 4)
   const recentItems = inventoryItems.slice(0, 4);
 
+  const exportToExcel = () => {
+    // 1. Low Stock Data
+    const lowStock = inventoryItems.filter(item => item.quantity < item.threshold).map(item => ({
+      SKU: item.sku,
+      Name: item.name,
+      Category: item.category,
+      Quantity: item.quantity,
+      Threshold: item.threshold,
+      Cost: item.costPrice,
+      Selling: item.sellingPrice
+    }));
+
+    // 2. Expiry Soon Data
+    const today = new Date("2026-07-06T12:00:00");
+    const expirySoon = inventoryItems.filter(item => {
+      if (!item.expiryDate) return false;
+      const exp = new Date(item.expiryDate);
+      const diffTime = exp.getTime() - today.getTime();
+      const diffDays = Math.ceil(diffTime / (1000 * 3600 * 24));
+      return diffDays > 0 && diffDays <= 30;
+    }).map(item => ({
+      SKU: item.sku,
+      Name: item.name,
+      Category: item.category,
+      Quantity: item.quantity,
+      ExpiryDate: item.expiryDate
+    }));
+
+    // 3. Analytics Data
+    const analytics = [
+      { Metric: "Total Stock Volume", Value: totalStockVolume },
+      { Metric: "Low Stock Alerts", Value: lowStockCount },
+      { Metric: "Expiring Soon (30d)", Value: expiringSoonCount },
+      { Metric: "Total Categories", Value: categories.length }
+    ];
+
+    // 4. All Inventory
+    const allInventory = inventoryItems.map(item => ({
+      SKU: item.sku,
+      Name: item.name,
+      Category: item.category,
+      Quantity: item.quantity,
+      Threshold: item.threshold,
+      CostPrice: item.costPrice,
+      SellingPrice: item.sellingPrice,
+      ExpiryDate: item.expiryDate || 'N/A'
+    }));
+
+    // 5. Sales History
+    const salesHistory = (invoices || []).map(inv => ({
+      InvoiceNo: inv.id,
+      Customer: inv.customerName || 'Walk-in',
+      Date: new Date(inv.issuedDate || inv.date || inv.created_at).toLocaleDateString(),
+      Items: inv.items ? inv.items.map(i => `${i.qty}x ${i.name}`).join(', ') : 'N/A',
+      TotalQty: inv.totalQuantity,
+      Subtotal: inv.subtotal,
+      Tax: inv.taxAmount,
+      GrandTotal: inv.amount,
+      PaymentStatus: inv.status,
+      PaymentMethod: inv.paymentMethod
+    }));
+
+    // Create Worksheets
+    const wsLowStock = XLSX.utils.json_to_sheet(lowStock.length ? lowStock : [{ Message: 'No Low Stock' }]);
+    const wsExpiry = XLSX.utils.json_to_sheet(expirySoon.length ? expirySoon : [{ Message: 'No Items Expiring Soon' }]);
+    const wsAnalytics = XLSX.utils.json_to_sheet(analytics);
+    const wsAll = XLSX.utils.json_to_sheet(allInventory.length ? allInventory : [{ Message: 'No Inventory' }]);
+    const wsSales = XLSX.utils.json_to_sheet(salesHistory.length ? salesHistory : [{ Message: 'No Sales History' }]);
+
+    // Create Workbook
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, wsAnalytics, "Analytics");
+    XLSX.utils.book_append_sheet(wb, wsSales, "Sales History");
+    XLSX.utils.book_append_sheet(wb, wsLowStock, "Low Stock");
+    XLSX.utils.book_append_sheet(wb, wsExpiry, "Expiry Soon");
+    XLSX.utils.book_append_sheet(wb, wsAll, "All Inventory");
+
+    // Save File
+    XLSX.writeFile(wb, "Inventory_Report.xlsx");
+  };
+
   return (
     <div className="space-y-gutter animate-[fadeIn_0.3s_ease-out]">
       {/* Header */}
-      <div className="mb-gutter">
-        <h2 className="text-headline-lg font-headline-lg text-on-background mb-2">Items Overview</h2>
-        <p className="text-body-md font-body-md text-secondary">Manage your entire inventory lifecycle from a single view.</p>
+      <div className="mb-gutter flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div>
+          <h2 className="text-headline-lg font-headline-lg text-on-background mb-2">Items Overview</h2>
+          <p className="text-body-md font-body-md text-secondary">Manage your entire inventory lifecycle from a single view.</p>
+        </div>
+        <button 
+          onClick={exportToExcel}
+          className="bg-primary text-on-primary px-5 py-2.5 rounded-xl font-label-md flex items-center gap-2 hover:opacity-90 transition-opacity shadow-sm"
+        >
+          <span className="material-symbols-outlined text-[20px]">download</span>
+          Export to Excel
+        </button>
       </div>
 
       {/* Bento Grid Layout */}

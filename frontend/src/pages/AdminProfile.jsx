@@ -2,59 +2,46 @@ import React, { useState, useRef, useContext } from 'react';
 import { InventoryContext } from '../context/InventoryContext';
 
 const AdminProfile = () => {
-  const { triggerAlert } = useContext(InventoryContext);
+  const { triggerAlert, users, addUser, updateUser, deleteUser } = useContext(InventoryContext);
 
   // Admin Profile State
-  const [profile, setProfile] = useState({
-    name: 'Alex Sterling',
-    role: 'System Administrator & Lead Operations',
-    loginId: 'AST-992-LG',
-    authorityLevel: 'Tier 1 Restricted',
-    email: 'a.sterling@stockglass.io',
-    facility: 'Central Hub - Sector G',
-    avatar: 'https://lh3.googleusercontent.com/aida-public/AB6AXuBTXQVHiaX0Q8zCa8-2SXA3vEwnDD40HhVESrYFgasSxMmdZpI0hq67hBbHBH7K6T_TgVt45-OSB5oAUm-fDio9AMMBTcODKjKsThPgs0uWOzSeT20eirtGKcl0LahEOc3IuxES3kH9qmjFIZMxLHEZfai105bwnPtGwk3XR4jHfA6q3GxwqzFQrWwhJLubMnZFCU0HMEVuSmMr7FiBbh0zvrH9LMHj_jhZ_iwRiOrSCRaXBQuOjGTj'
+  const [profile, setProfile] = useState(() => {
+    const userDataStr = localStorage.getItem('userData');
+    if (userDataStr) {
+      const u = JSON.parse(userDataStr);
+      return {
+        id: u.id,
+        name: u.name,
+        role: u.profile?.role || 'System Administrator & Lead Operations',
+        loginId: u.username,
+        authorityLevel: u.profile?.authority_level || 'Tier 1 Restricted',
+        email: u.email || 'admin@stockglass.io',
+        facility: u.profile?.facility || 'Central Hub - Sector G',
+        avatar: u.profile?.avatar || 'https://lh3.googleusercontent.com/aida-public/AB6AXuBTXQVHiaX0Q8zCa8-2SXA3vEwnDD40HhVESrYFgasSxMmdZpI0hq67hBbHBH7K6T_TgVt45-OSB5oAUm-fDio9AMMBTcODKjKsThPgs0uWOzSeT20eirtGKcl0LahEOc3IuxES3kH9qmjFIZMxLHEZfai105bwnPtGwk3XR4jHfA6q3GxwqzFQrWwhJLubMnZFCU0HMEVuSmMr7FiBbh0zvrH9LMHj_jhZ_iwRiOrSCRaXBQuOjGTj'
+      };
+    }
+    return {
+      id: null,
+      name: 'Alex Sterling',
+      role: 'System Administrator & Lead Operations',
+      loginId: 'AST-992-LG',
+      authorityLevel: 'Tier 1 Restricted',
+      email: 'a.sterling@stockglass.io',
+      facility: 'Central Hub - Sector G',
+      avatar: 'https://lh3.googleusercontent.com/aida-public/AB6AXuBTXQVHiaX0Q8zCa8-2SXA3vEwnDD40HhVESrYFgasSxMmdZpI0hq67hBbHBH7K6T_TgVt45-OSB5oAUm-fDio9AMMBTcODKjKsThPgs0uWOzSeT20eirtGKcl0LahEOc3IuxES3kH9qmjFIZMxLHEZfai105bwnPtGwk3XR4jHfA6q3GxwqzFQrWwhJLubMnZFCU0HMEVuSmMr7FiBbh0zvrH9LMHj_jhZ_iwRiOrSCRaXBQuOjGTj'
+    };
   });
 
   const [isEditingProfile, setIsEditingProfile] = useState(false);
   const [editedProfile, setEditedProfile] = useState({ ...profile });
 
-  // Worker List State
-  const [workers, setWorkers] = useState([
-    {
-      id: '#WK-4401',
-      name: 'Jordan Hayes',
-      role: 'Shift Supervisor',
-      status: 'Active',
-      avatar: 'https://lh3.googleusercontent.com/aida-public/AB6AXuDpEW1mZZs9BxQ-ukMTr2hLBeyhal7rP0iZubdDQAM8ZftPNksGIc_u22POog7p9ST_yFocNCg_AWpPDFK9SPHg0Zg7jmJyaZUiaJP5r9NVzWCET_UGxRSJzKPYnwXP70KwMFezY0Vs_PZXB_QmhaHWB37Wf8KRqAHwaLSARQsc_EpYAqlH0w9h_LT12zTFv2FfOONLAZ0xVY2bmBSm9DXwWJ2uTKlPrbFyeqB4pXELkfE6cmmOKRtT'
-    },
-    {
-      id: '#WK-4402',
-      name: 'Sarah Chen',
-      role: 'Inventory Auditor',
-      status: 'Active',
-      avatar: 'https://lh3.googleusercontent.com/aida-public/AB6AXuAhqsWGwLOApEgsxPzESkB8fOphze0NpcynQRjXG5VUV9ahUGakrHXQsWZWhkRxUwESjIqDsuQmtTFTRQVZLKQ1lBj4KJdhbDU8S8pYIQz722gnJ3bsKtEHNVVy3_RtnJ9c9znkUL_Ed4krzAdoOBeq4rJ-PGEES_2DMjCkzN3_Oq-4amN9cjZyqn54m0ywKYVTqhXYlgP2jrJcUU777UDNmHkAktw3DIrbLGi_-1ksWRG1UcdwTYnJ'
-    },
-    {
-      id: '#WK-4398',
-      name: 'Marcus Vane',
-      role: 'Stock Handler',
-      status: 'Break',
-      avatar: 'https://lh3.googleusercontent.com/aida-public/AB6AXuB3vi8s8oLnj7F_6a1LPuxyp3XJdA2_jpFbLFDkrl4kAb65_LUIBdQohn4Vvn2EZWpI3Q5Yaw33BcxjFxa_2maZs-lmxiwNdHx8YkCmURl7S1pztxLDCq3vDZTMoEkGsNpy4E1RgMQzHJRNdzoSdsvRnx6flKM99cOpawd2y59crXWFMswEfj29XfiGGBg9jze7BZXnjs4Lv2MM2EUzxNeRSLgfIVGFmjiv4rqqpjAX8s1uTNKWJqoe'
-    },
-    {
-      id: '#WK-4405',
-      name: 'Elena Rodriguez',
-      role: 'Packing Lead',
-      status: 'Offline',
-      avatar: 'https://lh3.googleusercontent.com/aida-public/AB6AXuCWK-g0F-YPijWnAQ6hkxTUtMrEfSZ4o5HESo_S0Wpyt9k_2y7fAHPNMk_iFw8G95h6wcRhJy8mr8zLUNpZNI3IdS2lpQaJSnp1cEGbjtzodfVvxePQKeMdWhjtE1yBa5GLY_u1vmeN9OVu3uou281OrLRlFM7jwYy22ZROG-8OCK2XhpwtErSVU3a_voGGjJ-CWstafUATLglOVm-GA9Nqc7NSLuQyQWi9--wMzUUAZUVZaroxvAv0'
-    }
-  ]);
+
 
   // Modal State
   const [showAddModal, setShowAddModal] = useState(false);
   const [newWorker, setNewWorker] = useState({
     name: '',
-    loginId: '',
+    email: '',
     password: '',
     authority: 'Analytics', // Sales, Inventory, Analytics
     manualMode: false,
@@ -69,6 +56,9 @@ const AdminProfile = () => {
 
   // Action Menu State (for updating worker status or deleting)
   const [activeMenuWorkerId, setActiveMenuWorkerId] = useState(null);
+  
+  // Edit Worker State
+  const [editingWorkerId, setEditingWorkerId] = useState(null);
 
   // File Input Ref
   const fileInputRef = useRef(null);
@@ -84,17 +74,38 @@ const AdminProfile = () => {
     }
   };
 
-  const handleEditProfileSave = () => {
-    setProfile(editedProfile);
-    setIsEditingProfile(false);
-    triggerAlert('Administrator profile updated successfully.', 'Success');
+  const handleEditProfileSave = async () => {
+    if (profile.id) {
+      try {
+        await updateUser(profile.id, {
+          email: editedProfile.email,
+          first_name: editedProfile.name.split(' ')[0],
+          last_name: editedProfile.name.split(' ').slice(1).join(' '),
+          profile: {
+            role: editedProfile.role,
+            authority_level: editedProfile.authorityLevel,
+            facility: editedProfile.facility,
+            avatar: editedProfile.avatar
+          }
+        });
+        setProfile(editedProfile);
+        setIsEditingProfile(false);
+        triggerAlert('Administrator profile updated successfully.', 'Success');
+      } catch (err) {
+        triggerAlert('Failed to update profile.', 'Error');
+      }
+    } else {
+      setProfile(editedProfile);
+      setIsEditingProfile(false);
+      triggerAlert('Administrator profile updated locally.', 'Success');
+    }
   };
 
   // Add Worker Handler
-  const handleAddWorkerSubmit = (e) => {
+  const handleAddWorkerSubmit = async (e) => {
     e.preventDefault();
-    if (!newWorker.name || !newWorker.loginId) {
-      triggerAlert('Please provide at least a worker name and login ID.', 'Validation Error');
+    if (!newWorker.name || !newWorker.email) {
+      triggerAlert('Please provide at least a worker name and email ID.', 'Validation Error');
       return;
     }
 
@@ -104,53 +115,106 @@ const AdminProfile = () => {
       Analytics: 'Analytics Operator'
     };
 
-    const workerObj = {
-      id: `#WK-${newWorker.loginId.replace(/[^0-9]/g, '') || Math.floor(1000 + Math.random() * 9000)}`,
-      name: newWorker.name,
-      role: roleMap[newWorker.authority] || 'Operator',
-      status: 'Active',
-      avatar: 'https://lh3.googleusercontent.com/aida-public/AB6AXuCBrqqfLDuDuqEHZvcnUYe0jGzS6CIK5tfW-QddwYHGonfEYY1bPj_czYd0uH66EuZB2b2j9EJUBylHbNoeee1MAvKViIRSa0vjuab9_SL19I-6y1-SlkPDvVsOTUDaWcqjh5GECxBTQKuyv8MPytliOrWdKwqt_afHX7acGCAMslx31akYdqqGG6scXQRuREVklqwfdS46sDNwIfum3dA9gd1UgfLLMI4ijP2u3w3mQFZ0Qhtncp9u'
-    };
+    if (editingWorkerId) {
+      try {
+        const updatePayload = {
+          email: newWorker.email,
+          first_name: newWorker.name.split(' ')[0],
+          last_name: newWorker.name.split(' ').slice(1).join(' '),
+          profile: {
+            role: roleMap[newWorker.authority] || 'Operator',
+            authority_level: newWorker.authority,
+            facility: 'Sector G'
+          }
+        };
+        if (newWorker.password) {
+          updatePayload.password = newWorker.password;
+        }
 
-    setWorkers((prev) => [...prev, workerObj]);
-    setShowAddModal(false);
-    // Reset Form
-    setNewWorker({
-      name: '',
-      loginId: '',
-      password: '',
-      authority: 'Analytics',
-      manualMode: false,
-      permissions: {
-        salesTerminal: false,
-        inventoryManagement: false,
-        notifications: false,
-        billingExport: false,
-        categories: false
+        await updateUser(editingWorkerId, updatePayload);
+
+        setShowAddModal(false);
+        setEditingWorkerId(null);
+        setNewWorker({
+          name: '',
+          email: '',
+          password: '',
+          authority: 'Analytics',
+          manualMode: false,
+          permissions: {
+            salesTerminal: false,
+            inventoryManagement: false,
+            notifications: false,
+            billingExport: false,
+            categories: false
+          }
+        });
+        triggerAlert(`Worker "${newWorker.name}" updated successfully.`, 'Worker Updated');
+      } catch (err) {
+        triggerAlert('Failed to update worker.', 'Error');
       }
-    });
-    triggerAlert(`New worker "${workerObj.name}" added successfully to the shift monitor.`, 'Worker Added');
+    } else {
+      try {
+        await addUser({
+        username: newWorker.email.split('@')[0] || newWorker.email,
+        password: newWorker.password || 'default123',
+        email: newWorker.email,
+        first_name: newWorker.name.split(' ')[0],
+        last_name: newWorker.name.split(' ').slice(1).join(' '),
+        is_staff: true,
+        profile: {
+          role: roleMap[newWorker.authority] || 'Operator',
+          authority_level: newWorker.authority,
+          facility: 'Sector G',
+          avatar: 'https://lh3.googleusercontent.com/aida-public/AB6AXuCBrqqfLDuDuqEHZvcnUYe0jGzS6CIK5tfW-QddwYHGonfEYY1bPj_czYd0uH66EuZB2b2j9EJUBylHbNoeee1MAvKViIRSa0vjuab9_SL19I-6y1-SlkPDvVsOTUDaWcqjh5GECxBTQKuyv8MPytliOrWdKwqt_afHX7acGCAMslx31akYdqqGG6scXQRuREVklqwfdS46sDNwIfum3dA9gd1UgfLLMI4ijP2u3w3mQFZ0Qhtncp9u'
+        }
+      });
+
+      setShowAddModal(false);
+      setNewWorker({
+        name: '',
+        email: '',
+        password: '',
+        authority: 'Analytics',
+        manualMode: false,
+        permissions: {
+          salesTerminal: false,
+          inventoryManagement: false,
+          notifications: false,
+          billingExport: false,
+          categories: false
+        }
+      });
+      triggerAlert(`New worker "${newWorker.name}" added successfully.`, 'Worker Added');
+    } catch (err) {
+      triggerAlert('Failed to add worker. Maybe email ID already exists.', 'Error');
+    }
+    }
   };
 
   // Worker Actions
-  const handleStatusChange = (id, newStatus) => {
-    setWorkers((prev) =>
-      prev.map((w) => (w.id === id ? { ...w, status: newStatus } : w))
-    );
-    setActiveMenuWorkerId(null);
+  const handleStatusChange = async (id, newStatus) => {
+    try {
+      await updateUser(id, { is_active: newStatus === 'Active' });
+      setActiveMenuWorkerId(null);
+    } catch (err) {
+      triggerAlert('Failed to update status.', 'Error');
+    }
   };
 
-  const handleDeleteWorker = (id) => {
-    const deleted = workers.find((w) => w.id === id);
-    setWorkers((prev) => prev.filter((w) => w.id !== id));
-    setActiveMenuWorkerId(null);
-    if (deleted) {
-      triggerAlert(`Worker "${deleted.name}" has been removed from the session list.`, 'Worker Removed');
+  const handleDeleteWorker = async (id) => {
+    try {
+      await deleteUser(id);
+      setActiveMenuWorkerId(null);
+      triggerAlert(`Worker has been removed.`, 'Worker Removed');
+    } catch (err) {
+      triggerAlert('Failed to delete worker.', 'Error');
     }
   };
 
   // Capacity calculation (e.g. out of 16 limit)
-  const activeWorkersCount = workers.filter((w) => w.status === 'Active').length;
+  const workerList = users.filter(u => u.loginId !== profile.loginId);
+  const activeWorkersCount = workerList.filter((w) => w.is_active).length;
   const capacityPercent = Math.min(Math.round((activeWorkersCount / 16) * 100), 100);
 
   const handleGlobalAllocation = () => {
@@ -341,7 +405,24 @@ const AdminProfile = () => {
               <h3 className="font-headline-md text-headline-md text-on-surface dark:text-white">Live Worker Status</h3>
             </div>
             <button
-              onClick={() => setShowAddModal(true)}
+              onClick={() => {
+                setEditingWorkerId(null);
+                setNewWorker({
+                  name: '',
+                  email: '',
+                  password: '',
+                  authority: 'Analytics',
+                  manualMode: false,
+                  permissions: {
+                    salesTerminal: false,
+                    inventoryManagement: false,
+                    notifications: false,
+                    billingExport: false,
+                    categories: false
+                  }
+                });
+                setShowAddModal(true);
+              }}
               className="bg-primary text-white px-6 py-2.5 rounded-xl font-bold flex items-center gap-2 hover:shadow-lg hover:shadow-primary/20 transition-all active:scale-95 text-label-md font-label-md"
             >
               <span className="material-symbols-outlined text-[18px]">person_add</span>
@@ -355,40 +436,33 @@ const AdminProfile = () => {
                 <tr className="text-left border-b border-white/40 dark:border-zinc-800">
                   <th className="pb-4 font-label-md text-label-md text-on-surface-variant dark:text-zinc-400">Worker</th>
                   <th className="pb-4 font-label-md text-label-md text-on-surface-variant dark:text-zinc-400">Role</th>
-                  <th className="pb-4 font-label-md text-label-md text-on-surface-variant dark:text-zinc-400">ID</th>
+                  <th className="pb-4 font-label-md text-label-md text-on-surface-variant dark:text-zinc-400">Email ID</th>
                   <th className="pb-4 font-label-md text-label-md text-on-surface-variant dark:text-zinc-400">Status</th>
                   <th className="pb-4 font-label-md text-label-md text-on-surface-variant dark:text-zinc-400 text-right">Action</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-white/20 dark:divide-zinc-800">
-                {workers.map((worker) => (
+                {workerList.map((worker) => (
                   <tr key={worker.id} className="group hover:bg-white/10 dark:hover:bg-white/5 transition-colors">
                     <td className="py-4 flex items-center gap-3">
                       <div className="w-10 h-10 rounded-full bg-surface-variant border border-white/40 dark:border-zinc-700 overflow-hidden">
                         <img
                           className="w-full h-full object-cover"
                           alt={worker.name}
-                          src={worker.avatar}
+                          src={worker.avatar || 'https://lh3.googleusercontent.com/aida-public/AB6AXuDpEW1mZZs9BxQ-ukMTr2hLBeyhal7rP0iZubdDQAM8ZftPNksGIc_u22POog7p9ST_yFocNCg_AWpPDFK9SPHg0Zg7jmJyaZUiaJP5r9NVzWCET_UGxRSJzKPYnwXP70KwMFezY0Vs_PZXB_QmhaHWB37Wf8KRqAHwaLSARQsc_EpYAqlH0w9h_LT12zTFv2FfOONLAZ0xVY2bmBSm9DXwWJ2uTKlPrbFyeqB4pXELkfE6cmmOKRtT'}
                         />
                       </div>
                       <span className="font-bold text-on-surface dark:text-white">{worker.name}</span>
                     </td>
                     <td className="py-4 text-on-surface-variant dark:text-zinc-400">{worker.role}</td>
-                    <td className="py-4 font-mono text-sm text-on-surface-variant dark:text-zinc-500">{worker.id}</td>
+                    <td className="py-4 font-mono text-sm text-on-surface-variant dark:text-zinc-500">{worker.email}</td>
                     <td className="py-4">
-                      {worker.status === 'Active' && (
+                      {worker.is_active ? (
                         <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-green-500/20 text-green-700 dark:text-green-400 text-xs font-bold border border-green-500/30">
                           <span className="w-1.5 h-1.5 rounded-full bg-green-500"></span>
                           Active
                         </span>
-                      )}
-                      {worker.status === 'Break' && (
-                        <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-primary-container/20 text-primary-container text-xs font-bold border border-primary-container/30">
-                          <span className="w-1.5 h-1.5 rounded-full bg-primary-container"></span>
-                          Break
-                        </span>
-                      )}
-                      {worker.status === 'Offline' && (
+                      ) : (
                         <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-secondary-container dark:bg-zinc-800 text-on-secondary-container dark:text-zinc-400 text-xs font-bold border border-white/40 dark:border-zinc-700">
                           <span className="w-1.5 h-1.5 rounded-full bg-secondary"></span>
                           Offline
@@ -421,16 +495,34 @@ const AdminProfile = () => {
                               <span className="w-2.5 h-2.5 rounded-full bg-green-500"></span> Active
                             </button>
                             <button
-                              onClick={() => handleStatusChange(worker.id, 'Break')}
-                              className="w-full px-4 py-2 hover:bg-zinc-100 dark:hover:bg-zinc-700 text-on-surface dark:text-zinc-200 flex items-center gap-2"
-                            >
-                              <span className="w-2.5 h-2.5 rounded-full bg-primary"></span> Break
-                            </button>
-                            <button
                               onClick={() => handleStatusChange(worker.id, 'Offline')}
                               className="w-full px-4 py-2 hover:bg-zinc-100 dark:hover:bg-zinc-700 text-on-surface dark:text-zinc-200 flex items-center gap-2"
                             >
                               <span className="w-2.5 h-2.5 rounded-full bg-zinc-400"></span> Offline
+                            </button>
+                            <button
+                              onClick={() => {
+                                setEditingWorkerId(worker.id);
+                                setNewWorker({
+                                  name: worker.name,
+                                  email: worker.email,
+                                  password: '',
+                                  authority: worker.role === 'Sales Operator' ? 'Sales' : worker.role === 'Inventory Controller' ? 'Inventory' : 'Analytics',
+                                  manualMode: false,
+                                  permissions: {
+                                    salesTerminal: false,
+                                    inventoryManagement: false,
+                                    notifications: false,
+                                    billingExport: false,
+                                    categories: false
+                                  }
+                                });
+                                setShowAddModal(true);
+                                setActiveMenuWorkerId(null);
+                              }}
+                              className="w-full px-4 py-2 hover:bg-zinc-100 dark:hover:bg-zinc-700 text-on-surface dark:text-zinc-200 flex items-center gap-2"
+                            >
+                              <span className="material-symbols-outlined text-[16px]">edit</span> Edit
                             </button>
                             <div className="border-t border-white/20 dark:border-zinc-700 my-1"></div>
                             <button
@@ -464,7 +556,7 @@ const AdminProfile = () => {
                   <p className="font-label-md text-label-md text-on-surface-variant dark:text-zinc-400">On-Shift Now</p>
                 </div>
                 <div className="w-24 h-12 bg-primary/10 rounded-lg flex items-center justify-center border border-primary/25">
-                  <span className="text-primary font-bold text-sm">+{workers.length - 4} Added</span>
+                  <span className="text-primary font-bold text-sm">{workerList.length} Total</span>
                 </div>
               </div>
               <div className="h-2 bg-white/40 dark:bg-zinc-800 rounded-full overflow-hidden">
@@ -509,10 +601,12 @@ const AdminProfile = () => {
             onClick={() => setShowAddModal(false)}
           ></div>
           <div className="glass-panel-high w-full max-w-lg rounded-[2rem] p-8 space-y-6 transition-transform duration-200 scale-100 bg-white/95 dark:bg-zinc-900/95 border border-white/80 dark:border-white/10 shadow-2xl relative z-10">
-            <div className="flex justify-between items-start">
+            <div className="flex justify-between items-start mb-6">
               <div>
-                <h2 className="font-headline-lg text-headline-lg text-on-surface dark:text-white">Add New Worker</h2>
-                <p className="text-on-surface-variant dark:text-zinc-400 opacity-70">Configure identity and system permissions</p>
+                <h2 className="font-headline-md text-headline-md text-on-surface dark:text-white">{editingWorkerId ? 'Edit Team Member' : 'Add New Team Member'}</h2>
+                <p className="font-body-md text-body-md text-on-surface-variant dark:text-zinc-400 mt-1">
+                  {editingWorkerId ? 'Update access privileges.' : 'Grant system access and assign functional modules.'}
+                </p>
               </div>
               <button
                 onClick={() => setShowAddModal(false)}
@@ -542,18 +636,18 @@ const AdminProfile = () => {
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <label className="text-label-md font-label-md text-on-surface-variant dark:text-zinc-300">Login ID</label>
+                  <label className="text-label-md font-label-md text-on-surface-variant dark:text-zinc-300">Email ID</label>
                   <div className="relative">
                     <span className="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-on-surface-variant dark:text-zinc-400">
-                      fingerprint
+                      email
                     </span>
                     <input
                       className="w-full bg-white/40 dark:bg-zinc-800 border border-white/60 dark:border-white/10 rounded-2xl py-3 pl-12 pr-4 focus:ring-0 focus:border-primary-container text-on-surface dark:text-white"
-                      placeholder="SG_XXX"
-                      type="text"
+                      placeholder="user@stockglass.com"
+                      type="email"
                       required
-                      value={newWorker.loginId}
-                      onChange={(e) => setNewWorker({ ...newWorker, loginId: e.target.value })}
+                      value={newWorker.email}
+                      onChange={(e) => setNewWorker({ ...newWorker, email: e.target.value })}
                     />
                   </div>
                 </div>
@@ -679,8 +773,8 @@ const AdminProfile = () => {
                   type="button"
                   onClick={(e) => {
                     const randomId = Math.floor(1000 + Math.random() * 9000);
-                    setNewWorker((prev) => ({ ...prev, loginId: `SG-${randomId}` }));
-                    triggerAlert(`Generated temporary login ID: SG-${randomId}. Authority levels applied.`, 'Role Generated');
+                    setNewWorker((prev) => ({ ...prev, email: `worker${randomId}@stockglass.com` }));
+                    triggerAlert(`Generated temporary email ID: worker${randomId}@stockglass.com. Authority levels applied.`, 'Role Generated');
                   }}
                   className="flex-1 py-3 border border-primary-container/30 text-primary dark:text-primary-container font-bold rounded-2xl hover:bg-primary-container/10 transition-all flex items-center justify-center gap-2 text-sm active:scale-95"
                 >

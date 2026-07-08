@@ -1,6 +1,9 @@
 from django.db import models
 from django.core.validators import MinValueValidator
 from decimal import Decimal
+from django.contrib.auth.models import User
+from django.db.models.signals import post_save
+from django.dispatch import receiver
 
 class Category(models.Model):
     name = models.CharField(max_length=100, unique=True)
@@ -117,3 +120,40 @@ class SaleItem(models.Model):
 
     def __str__(self):
         return f"{self.quantity}x {self.item_name} in {self.sale.invoice_number}"
+
+class UserProfile(models.Model):
+    user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='profile')
+    role = models.CharField(max_length=100, default='Operator')
+    authority_level = models.CharField(max_length=100, default='Restricted')
+    facility = models.CharField(max_length=100, default='Central Hub')
+    avatar = models.TextField(blank=True, null=True)
+
+    def __str__(self):
+        return self.user.username
+
+@receiver(post_save, sender=User)
+def create_user_profile(sender, instance, created, **kwargs):
+    if created:
+        UserProfile.objects.create(user=instance)
+
+@receiver(post_save, sender=User)
+def save_user_profile(sender, instance, **kwargs):
+    instance.profile.save()
+
+class PendingOrder(models.Model):
+    STATUS_CHOICES = [
+        ('Queued', 'Queued'),
+        ('Picking', 'Picking'),
+        ('Ready', 'Ready'),
+        ('Shipped', 'Shipped'),
+    ]
+
+    order_id = models.CharField(max_length=50, unique=True)
+    customer_name = models.CharField(max_length=150)
+    items_description = models.CharField(max_length=255)
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='Queued')
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    def __str__(self):
+        return f"{self.order_id} - {self.customer_name}"

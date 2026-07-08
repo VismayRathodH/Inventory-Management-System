@@ -1,5 +1,49 @@
 from rest_framework import serializers
-from .models import Category, InventoryItem, Notification, Bundle, BundleItem, Sale, SaleItem
+from django.contrib.auth.models import User
+from .models import Category, InventoryItem, Notification, Bundle, BundleItem, Sale, SaleItem, UserProfile, PendingOrder
+
+class UserProfileSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = UserProfile
+        fields = ['role', 'authority_level', 'facility', 'avatar']
+
+class UserSerializer(serializers.ModelSerializer):
+    profile = UserProfileSerializer(required=False)
+
+    class Meta:
+        model = User
+        fields = ['id', 'username', 'email', 'first_name', 'last_name', 'is_staff', 'is_active', 'profile', 'password']
+        extra_kwargs = {'password': {'write_only': True, 'required': False}}
+
+    def create(self, validated_data):
+        profile_data = validated_data.pop('profile', {})
+        password = validated_data.pop('password', None)
+        user = User(**validated_data)
+        if password:
+            user.set_password(password)
+        user.save()
+        
+        if profile_data:
+            for attr, value in profile_data.items():
+                setattr(user.profile, attr, value)
+            user.profile.save()
+        return user
+
+    def update(self, instance, validated_data):
+        profile_data = validated_data.pop('profile', {})
+        password = validated_data.pop('password', None)
+        
+        for attr, value in validated_data.items():
+            setattr(instance, attr, value)
+        if password:
+            instance.set_password(password)
+        instance.save()
+
+        if profile_data:
+            for attr, value in profile_data.items():
+                setattr(instance.profile, attr, value)
+            instance.profile.save()
+        return instance
 
 class CategorySerializer(serializers.ModelSerializer):
     itemCount = serializers.SerializerMethodField()
@@ -125,3 +169,8 @@ class SaleSerializer(serializers.ModelSerializer):
         for item_data in items_data:
             SaleItem.objects.create(sale=sale, **item_data)
         return sale
+
+class PendingOrderSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = PendingOrder
+        fields = ['id', 'order_id', 'customer_name', 'items_description', 'status', 'created_at', 'updated_at']

@@ -1,7 +1,7 @@
 import React, { useContext, useState, useEffect } from 'react';
 import { InventoryContext } from '../context/InventoryContext';
 
-const InventoryList = ({ setCurrentView }) => {
+const InventoryList = ({ setCurrentView, roleCategory }) => {
   const { inventoryItems, categories, addInventoryItem, updateInventoryItem, deleteInventoryItem, triggerAlert } = useContext(InventoryContext);
 
   // Filter and view states
@@ -282,13 +282,15 @@ const InventoryList = ({ setCurrentView }) => {
             </select>
 
             {/* Initialize Item Trigger */}
-            <button 
-              onClick={() => setCurrentView('add_item')}
-              className="p-2 glass-panel rounded-lg hover:bg-white/60 dark:hover:bg-white/10 transition-colors flex items-center justify-center text-primary"
-              title="Initialize New Item"
-            >
-              <span className="material-symbols-outlined">add</span>
-            </button>
+            {roleCategory !== 'sales' && (
+              <button 
+                onClick={() => setCurrentView('add_item')}
+                className="p-2 glass-panel rounded-lg hover:bg-white/60 dark:hover:bg-white/10 transition-colors flex items-center justify-center text-primary"
+                title="Initialize New Item"
+              >
+                <span className="material-symbols-outlined">add</span>
+              </button>
+            )}
           </div>
         </div>
 
@@ -303,13 +305,13 @@ const InventoryList = ({ setCurrentView }) => {
                 <th className="px-6 py-4 font-semibold text-center">Quantity</th>
                 <th className="px-6 py-4 font-semibold">Cost / Selling</th>
                 <th className="px-6 py-4 font-semibold">Expiry Status</th>
-                <th className="px-6 py-4 font-semibold text-right">Actions</th>
+                {roleCategory !== 'sales' && <th className="px-6 py-4 font-semibold text-right">Actions</th>}
               </tr>
             </thead>
             <tbody className="divide-y divide-white/20">
               {currentItems.length === 0 ? (
                 <tr>
-                  <td colSpan="7" className="px-6 py-12 text-center text-secondary">
+                  <td colSpan={roleCategory !== 'sales' ? "7" : "6"} className="px-6 py-12 text-center text-secondary">
                     No matching inventory items found.
                   </td>
                 </tr>
@@ -376,24 +378,26 @@ const InventoryList = ({ setCurrentView }) => {
                       </td>
 
                       {/* Actions */}
-                      <td className="px-6 py-4 text-right">
-                        <div className="flex justify-end gap-1">
-                          <button 
-                            onClick={() => handleOpenEdit(item)}
-                            className="p-2 hover:text-primary transition-colors text-secondary dark:text-secondary-fixed-dim"
-                            title="Edit Record"
-                          >
-                            <span className="material-symbols-outlined text-md">edit</span>
-                          </button>
-                          <button 
-                            onClick={() => handleDelete(item.id, item.name)}
-                            className="p-2 hover:text-error transition-colors text-secondary dark:text-secondary-fixed-dim"
-                            title="Delete Record"
-                          >
-                            <span className="material-symbols-outlined text-md">delete</span>
-                          </button>
-                        </div>
-                      </td>
+                      {roleCategory !== 'sales' && (
+                        <td className="px-6 py-4 text-right">
+                          <div className="flex justify-end gap-1">
+                            <button 
+                              onClick={() => handleOpenEdit(item)}
+                              className="p-2 hover:text-primary transition-colors text-secondary dark:text-secondary-fixed-dim"
+                              title="Edit Record"
+                            >
+                              <span className="material-symbols-outlined text-md">edit</span>
+                            </button>
+                            <button 
+                              onClick={() => handleDelete(item.id, item.name)}
+                              className="p-2 hover:text-error transition-colors text-secondary dark:text-secondary-fixed-dim"
+                              title="Delete Record"
+                            >
+                              <span className="material-symbols-outlined text-md">delete</span>
+                            </button>
+                          </div>
+                        </td>
+                      )}
                     </tr>
                   );
                 })

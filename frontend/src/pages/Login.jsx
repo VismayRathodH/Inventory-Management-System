@@ -13,16 +13,6 @@ const Login = ({ onLogin }) => {
     e.preventDefault();
     setError('');
     
-    if (activeTab === 'worker') {
-      setLoading(true);
-      setTimeout(() => {
-        setLoading(false);
-        localStorage.setItem('token', 'mock-worker-token-xyz');
-        onLogin('worker');
-      }, 600);
-      return;
-    }
-
     if (email && password) {
       setLoading(true);
       try {
@@ -31,7 +21,10 @@ const Login = ({ onLogin }) => {
           password: password
         });
         localStorage.setItem('token', response.data.token);
-        onLogin('admin');
+        if (response.data.user) {
+          localStorage.setItem('userData', JSON.stringify(response.data.user));
+        }
+        onLogin(response.data.role);
       } catch (err) {
         setError(err.response?.data?.error || 'Invalid credentials or server error.');
       } finally {

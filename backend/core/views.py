@@ -1,12 +1,13 @@
-from rest_framework.response import Response
+from rest_framework import viewsets, status, filters
 from rest_framework.decorators import api_view, permission_classes
-from rest_framework.permissions import AllowAny, IsAuthenticated
-from rest_framework.authtoken.models import Token
-from rest_framework import status, viewsets, filters
+from rest_framework.response import Response
+from rest_framework.permissions import IsAuthenticated, AllowAny, IsAdminUser
 from django.contrib.auth import authenticate, get_user_model
+from django.contrib.auth.models import User
+from rest_framework.authtoken.models import Token
 from django_filters.rest_framework import DjangoFilterBackend
-from .models import Category, InventoryItem, Notification
-from .serializers import CategorySerializer, InventoryItemSerializer, NotificationSerializer
+from .models import Category, InventoryItem, Notification, Bundle, BundleItem, Sale, SaleItem, PendingOrder
+from .serializers import CategorySerializer, InventoryItemSerializer, NotificationSerializer, BundleSerializer, SaleSerializer, UserSerializer, PendingOrderSerializer
 
 @api_view(['GET'])
 @permission_classes([AllowAny])
@@ -29,9 +30,36 @@ def login_view(request):
         user = authenticate(username=user_obj.username, password=password)
         if user:
             token, _ = Token.objects.get_or_create(user=user)
-            return Response({'token': token.key})
+            # Fetch profile if exists
+            profile_data = {}
+            if hasattr(user, 'profile'):
+                profile_data = {
+                    'role': user.profile.role,
+                    'facility': user.profile.facility,
+                    'authority_level': user.profile.authority_level,
+                    'avatar': user.profile.avatar,
+                }
+                
+            role = profile_data.get('role') if profile_data.get('role') else ('admin' if user.is_staff else 'worker')
+            
+            return Response({
+                'token': token.key,
+                'role': role,
+                'user': {
+                    'id': user.id,
+                    'username': user.username,
+                    'name': f"{user.first_name} {user.last_name}".strip() or user.username,
+                    'email': user.email,
+                    'profile': profile_data
+                }
+            })
             
     return Response({'error': 'Invalid credentials'}, status=status.HTTP_401_UNAUTHORIZED)
+
+class UserViewSet(viewsets.ModelViewSet):
+    queryset = User.objects.all().order_by('-date_joined')
+    serializer_class = UserSerializer
+    permission_classes = [IsAuthenticated, IsAdminUser]
 
 class CategoryViewSet(viewsets.ModelViewSet):
     queryset = Category.objects.all().order_by('name')
@@ -164,3 +192,11 @@ class SaleViewSet(viewsets.ModelViewSet):
     permission_classes = [IsAuthenticated]
     filter_backends = [filters.SearchFilter]
     search_fields = ['invoice_number', 'customer_name']
+
+class PendingOrderViewSet(viewsets.ModelViewSet):
+    queryset = PendingOrder.objects.all().order_by('-created_at')
+    serializer_class = PendingOrderSerializer
+    permission_classes = [IsAuthenticated]
+    filter_backends = [DjangoFilterBackend, filters.SearchFilter, filters.OrderingFilter]
+    filterset_fields = ['status']
+    search_fields = ['order_id', 'customer_name', 'items_description']

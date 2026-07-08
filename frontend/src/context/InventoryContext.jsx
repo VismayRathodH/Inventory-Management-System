@@ -21,6 +21,8 @@ export const InventoryProvider = ({ children }) => {
   useEffect(() => {
     localStorage.setItem('inventory_logs', JSON.stringify(logs));
   }, [logs]);
+  const [users, setUsers] = useState([]);
+  const [pendingOrders, setPendingOrders] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [globalAlert, setGlobalAlert] = useState(null);
@@ -129,12 +131,49 @@ export const InventoryProvider = ({ children }) => {
     }
   }, []);
 
+  const fetchUsers = useCallback(async () => {
+    try {
+      const response = await api.get('/users/');
+      const mapped = response.data.map(u => ({
+        id: u.id,
+        loginId: u.username,
+        name: u.first_name || u.last_name ? `${u.first_name} ${u.last_name}`.trim() : u.username,
+        email: u.email,
+        is_active: u.is_active,
+        role: u.profile?.role || 'Operator',
+        facility: u.profile?.facility || 'Central Hub',
+        authorityLevel: u.profile?.authority_level || 'Restricted',
+        avatar: u.profile?.avatar || ''
+      }));
+      setUsers(mapped);
+    } catch (err) {
+      console.error("Failed to fetch users", err);
+    }
+  }, []);
+
+  const fetchPendingOrders = useCallback(async () => {
+    try {
+      const response = await api.get('/pending-orders/');
+      const mapped = response.data.map(o => ({
+        id: o.order_id,
+        internal_id: o.id,
+        customer: o.customer_name,
+        items: o.items_description,
+        status: o.status,
+        createdAt: o.created_at
+      }));
+      setPendingOrders(mapped);
+    } catch (err) {
+      console.error("Failed to fetch pending orders", err);
+    }
+  }, []);
+
   const refreshAll = useCallback(async () => {
     if (!localStorage.getItem('token')) return;
     setLoading(true);
-    await Promise.all([fetchCategories(), fetchInventory(), fetchNotifications(), fetchPacks(), fetchInvoices()]);
+    await Promise.all([fetchCategories(), fetchInventory(), fetchNotifications(), fetchPacks(), fetchInvoices(), fetchUsers(), fetchPendingOrders()]);
     setLoading(false);
-  }, [fetchCategories, fetchInventory, fetchNotifications, fetchPacks, fetchInvoices]);
+  }, [fetchCategories, fetchInventory, fetchNotifications, fetchPacks, fetchInvoices, fetchUsers, fetchPendingOrders]);
 
   useEffect(() => {
     refreshAll();
@@ -472,6 +511,58 @@ export const InventoryProvider = ({ children }) => {
     }
   };
 
+  const addUser = async (userData) => {
+    try {
+      await api.post('/users/', userData);
+      await fetchUsers();
+    } catch (err) {
+      throw new Error("Failed to add user");
+    }
+  };
+
+  const updateUser = async (id, userData) => {
+    try {
+      await api.patch(`/users/${id}/`, userData);
+      await fetchUsers();
+    } catch (err) {
+      throw new Error("Failed to update user");
+    }
+  };
+
+  const deleteUser = async (id) => {
+    try {
+      await api.delete(`/users/${id}/`);
+      await fetchUsers();
+    } catch (err) {
+      throw new Error("Failed to delete user");
+    }
+  };
+
+  const createPendingOrder = async (orderData) => {
+    try {
+      await api.post('/pending-orders/', {
+        order_id: orderData.id,
+        customer_name: orderData.customer,
+        items_description: orderData.items,
+        status: orderData.status
+      });
+      await fetchPendingOrders();
+    } catch (err) {
+      throw new Error("Failed to create pending order");
+    }
+  };
+
+  const updatePendingOrderStatus = async (internalId, newStatus) => {
+    try {
+      await api.patch(`/pending-orders/${internalId}/`, {
+        status: newStatus
+      });
+      await fetchPendingOrders();
+    } catch (err) {
+      throw new Error("Failed to update pending order status");
+    }
+  };
+
   return (
     <InventoryContext.Provider value={{
       categories,
@@ -499,7 +590,15 @@ export const InventoryProvider = ({ children }) => {
       deletePack,
       addPackToCart,
       triggerAlert,
-      groupInventoryItemsByName
+      groupInventoryItemsByName,
+      users,
+      fetchUsers,
+      addUser,
+      updateUser,
+      deleteUser,
+      pendingOrders,
+      createPendingOrder,
+      updatePendingOrderStatus
     }}>
       {children}
       

@@ -27,9 +27,20 @@ function AppContent() {
   const location = useLocation();
   const navigate = useNavigate();
 
+  const getRoleCategory = (rawRole) => {
+    const r = (rawRole || '').toLowerCase();
+    if (r.includes('admin') || r.includes('lead operations')) return 'admin';
+    if (r.includes('sales')) return 'sales';
+    if (r.includes('inventory')) return 'inventory';
+    if (r.includes('analytics')) return 'analytics';
+    return 'worker';
+  };
+
+  const roleCategory = getRoleCategory(role);
+
   // Derive currentView from location pathname for legacy components
   const currentPath = location.pathname.substring(1);
-  const currentView = currentPath || (role === 'worker' ? 'worker_dashboard' : 'dashboard');
+  const currentView = currentPath || (roleCategory === 'admin' ? 'dashboard' : 'worker_dashboard');
 
   const setCurrentView = (view) => {
     navigate(`/${view}`);
@@ -41,10 +52,11 @@ function AppContent() {
     setRole(finalRole);
     localStorage.setItem('isLoggedIn', 'true');
     localStorage.setItem('userRole', finalRole);
-    if (finalRole === 'worker') {
-      navigate('/worker_dashboard');
-    } else {
+    const rc = getRoleCategory(finalRole);
+    if (rc === 'admin') {
       navigate('/dashboard');
+    } else {
+      navigate('/worker_dashboard');
     }
   };
 
@@ -69,32 +81,44 @@ function AppContent() {
       currentView={currentView}
       setCurrentView={setCurrentView}
       handleLogout={handleLogout}
-      role={role}
+      role={roleCategory}
     >
       <Routes>
-        {role === 'worker' ? (
+        {['admin', 'analytics'].includes(roleCategory) && (
+          <Route path="/dashboard" element={<Dashboard setCurrentView={setCurrentView} />} />
+        )}
+        {['sales', 'inventory', 'analytics', 'worker'].includes(roleCategory) && (
+          <Route path="/worker_dashboard" element={<WorkerDashboard setCurrentView={setCurrentView} />} />
+        )}
+        {['admin', 'sales'].includes(roleCategory) && (
           <>
-            <Route path="/worker_dashboard" element={<WorkerDashboard setCurrentView={setCurrentView} />} />
             <Route path="/sales" element={<SalesBillingTerminal setCurrentView={setCurrentView} />} />
             <Route path="/bundles" element={<BundlesManagement setCurrentView={setCurrentView} />} />
-            <Route path="*" element={<Navigate to="/worker_dashboard" replace />} />
-          </>
-        ) : (
-          <>
-            <Route path="/dashboard" element={<Dashboard setCurrentView={setCurrentView} />} />
-            <Route path="/categories" element={<CategoryList setCurrentView={setCurrentView} />} />
-            <Route path="/add_category" element={<AddCategory setCurrentView={setCurrentView} />} />
-            <Route path="/inventory" element={<InventoryList setCurrentView={setCurrentView} />} />
-            <Route path="/add_item" element={<AddItem setCurrentView={setCurrentView} />} />
-            <Route path="/notifications" element={<Notifications setCurrentView={setCurrentView} />} />
-            <Route path="/sales" element={<SalesBillingTerminal setCurrentView={setCurrentView} />} />
-            <Route path="/bundles" element={<BundlesManagement setCurrentView={setCurrentView} />} />
-            <Route path="/analytics" element={<AdvancedAnalytics setCurrentView={setCurrentView} />} />
-            <Route path="/export" element={<InvoiceHistoryExport setCurrentView={setCurrentView} />} />
-            <Route path="/admin_profile" element={<AdminProfile setCurrentView={setCurrentView} />} />
-            <Route path="*" element={<Navigate to="/dashboard" replace />} />
           </>
         )}
+        {['admin', 'inventory'].includes(roleCategory) && (
+          <>
+            <Route path="/categories" element={<CategoryList setCurrentView={setCurrentView} />} />
+            <Route path="/add_category" element={<AddCategory setCurrentView={setCurrentView} />} />
+            <Route path="/add_item" element={<AddItem setCurrentView={setCurrentView} />} />
+          </>
+        )}
+        {['admin', 'sales', 'inventory'].includes(roleCategory) && (
+          <Route path="/inventory" element={<InventoryList setCurrentView={setCurrentView} roleCategory={roleCategory} />} />
+        )}
+        {['admin', 'analytics'].includes(roleCategory) && (
+          <>
+            <Route path="/notifications" element={<Notifications setCurrentView={setCurrentView} />} />
+            <Route path="/analytics" element={<AdvancedAnalytics setCurrentView={setCurrentView} />} />
+          </>
+        )}
+        {['admin'].includes(roleCategory) && (
+          <>
+            <Route path="/export" element={<InvoiceHistoryExport setCurrentView={setCurrentView} />} />
+            <Route path="/admin_profile" element={<AdminProfile setCurrentView={setCurrentView} />} />
+          </>
+        )}
+        <Route path="*" element={<Navigate to={roleCategory === 'admin' ? "/dashboard" : "/worker_dashboard"} replace />} />
       </Routes>
     </AppLayout>
   );
